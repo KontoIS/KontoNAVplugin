@@ -1,0 +1,133 @@
+OBJECT Page 10008856 Konto Invoice Details
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Invoice Details;
+               ISL=Konto reikningsupplìsingar];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10008851;
+    DataCaptionExpr="Invoice Description";
+    PageType=Card;
+    SourceTableTemporary=Yes;
+    ShowFilter=No;
+    OnAfterGetCurrRecord=VAR
+                           TempInvoiceItems@10008850 : TEMPORARY Record 10008851;
+                         BEGIN
+                           GetInvoiceItems(TempInvoiceItems);
+                           CurrPage.Items.PAGE.Set(TempInvoiceItems);
+                           MergeInvoiceCustomer;
+                         END;
+
+  }
+  CONTROLS
+  {
+    { 10008850;0;Container;
+                ContainerType=ContentArea }
+
+    { 10008851;1;Group    ;
+                Name=General;
+                CaptionML=ISL=Almennt;
+                GroupType=Group }
+
+    { 10008857;2;Field    ;
+                SourceExpr=Status }
+
+    { 10008852;2;Field    ;
+                SourceExpr="Invoice Number" }
+
+    { 10008860;2;Field    ;
+                SourceExpr="Invoice Description" }
+
+    { 10036011;2;Field    ;
+                SourceExpr="Customer Registration No." }
+
+    { 10036010;2;Field    ;
+                SourceExpr="Customer Name" }
+
+    { 10036009;2;Field    ;
+                SourceExpr="Customer Address" }
+
+    { 10036008;2;Field    ;
+                SourceExpr="Customer Post Code" }
+
+    { 10036007;2;Field    ;
+                SourceExpr="Customer City" }
+
+    { 10008853;2;Field    ;
+                SourceExpr="Invoice Amount" }
+
+    { 10008856;2;Field    ;
+                SourceExpr="Invoice Issue Date" }
+
+    { 10008858;2;Field    ;
+                SourceExpr="Invoice Due Date" }
+
+    { 10008859;2;Field    ;
+                SourceExpr="Invoice Settlement Date" }
+
+    { 10036003;1;Part     ;
+                Name=Items;
+                PagePartID=Page10008857;
+                PartType=Page }
+
+    { 10036002;1;Group    ;
+                Name=Invoicing;
+                CaptionML=ISL=Reikningur;
+                GroupType=Group }
+
+    { 10008854;2;Field    ;
+                SourceExpr="Invoice Currency Code" }
+
+    { 10008855;2;Field    ;
+                SourceExpr="Invoice Status" }
+
+    { 10008861;2;Field    ;
+                SourceExpr="Invoice Booking" }
+
+    { 10008862;2;Field    ;
+                SourceExpr="Invoice Cost Provide" }
+
+    { 10008864;2;Field    ;
+                SourceExpr="Invoice Terms" }
+
+    { 10036000;2;Field    ;
+                SourceExpr="Invoice Type" }
+
+    { 10036001;2;Field    ;
+                SourceExpr="Invoice Reference ID" }
+
+    { 10036004;1;Group    ;
+                Name=Delivery;
+                CaptionML=ISL=Afhending;
+                GroupType=Group }
+
+    { 10036005;2;Field    ;
+                SourceExpr="Customer E-Mail Address" }
+
+    { 10008863;2;Field    ;
+                SourceExpr="Invoice Delivery Date" }
+
+  }
+  CODE
+  {
+
+    PROCEDURE Set@10008850(VAR TempInvoice@10008850 : Record 10008851);
+    BEGIN
+      COPY(TempInvoice,TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,82 @@
+OBJECT Page 10008857 Konto Invoice Items
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Item List;
+               ISL=Konto v”rulisti];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10008851;
+    PageType=ListPart;
+    SourceTableTemporary=Yes;
+    OnOpenPage=BEGIN
+                 SETCURRENTKEY("Item Number");
+               END;
+
+  }
+  CONTROLS
+  {
+    { 10008850;0;Container;
+                ContainerType=ContentArea }
+
+    { 10008851;1;Group    ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 10008852;2;Field    ;
+                SourceExpr="Item Number" }
+
+    { 10008853;2;Field    ;
+                SourceExpr="Item Description" }
+
+    { 10008855;2;Field    ;
+                SourceExpr="Item Quantity" }
+
+    { 10008854;2;Field    ;
+                SourceExpr="Item Unit of Measure" }
+
+    { 10008858;2;Field    ;
+                SourceExpr="Item Unit Price" }
+
+    { 10008856;2;Field    ;
+                SourceExpr="Item Amount" }
+
+    { 10036001;2;Field    ;
+                SourceExpr="Item Discount Type" }
+
+    { 10008857;2;Field    ;
+                SourceExpr="Item Discount" }
+
+    { 10008859;2;Field    ;
+                SourceExpr="Item VAT %" }
+
+    { 10008860;2;Field    ;
+                SourceExpr="Item VAT Amount" }
+
+    { 10008861;2;Field    ;
+                SourceExpr="Item Amount Incl. VAT" }
+
+  }
+  CODE
+  {
+
+    PROCEDURE Set@1(VAR TempInvoiceItem@10008850 : TEMPORARY Record 10008851);
+    BEGIN
+      COPY(TempInvoiceItem,TRUE);
+      CurrPage.UPDATE;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

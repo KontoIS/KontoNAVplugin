@@ -1,0 +1,190 @@
+OBJECT Page 10008851 Konto Customer List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Customer List;
+               ISL=Konto viÐskiptamannalisti];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10008851;
+    PageType=List;
+    SourceTableTemporary=Yes;
+    OnOpenPage=BEGIN
+                 SETCURRENTKEY("Customer Name");
+               END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           IsLinked := Status IN [Status::"Updated in Konto",Status::"Updated in NAV",Status::Synchronized]
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 10008859;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 10008860;1   ;Action    ;
+                      Name=Details;
+                      CaptionML=[ENU=Details;
+                                 ISL=SundurliÐun];
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=CustomerContact;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoCustomerDetails@10008850 : Page 10008852;
+                               BEGIN
+                                 KontoCustomerDetails.Set(Rec);
+                                 KontoCustomerDetails.RUN;
+                               END;
+                                }
+      { 10008862;1   ;Action    ;
+                      Name=CustomerCard;
+                      CaptionML=[ENU=Customer Card;
+                                 ISL=ViÐskiptamannaspjald];
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=Customer;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 PageMgt@10008851 : Codeunit 700;
+                               BEGIN
+                                 PageMgt.PageRun("Related Record ID");
+                               END;
+                                }
+      { 10008863;1   ;Action    ;
+                      Name=CreateNAVCustomer;
+                      ShortCutKey=Ctrl+N;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Create NAV Customer;
+                                 ISL=Stofna NAV viÐskiptamann];
+                      Promoted=Yes;
+                      Enabled=NOT IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=NewCustomer;
+                      PromotedCategory=New;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10008850 : Codeunit 10008852;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.CreateNAVCustomerFromKonto(Rec);
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10036000;1   ;Action    ;
+                      Name=CreateKontoCustomer;
+                      ShortCutKey=Ctrl+N;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Create Konto Customer;
+                                 ISL=Stofna Konto viÐskiptamann];
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=NewCustomer;
+                      PromotedCategory=New;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10008850 : Codeunit 10008852;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.CreateKontoCustomerFromNAV(Rec);
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10008864;1   ;Action    ;
+                      Name=LinkExistingCustomer;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Link Existing Customer;
+                                 ISL=Tengja fyrirliggjandi viÐskiptamann];
+                      Promoted=Yes;
+                      Enabled=NOT IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=CoupledCustomer;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10008850 : Codeunit 10008852;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.LinkExistingNAVCustomerFromKonto(Rec);
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10036001;1   ;Action    ;
+                      Name=BreakExistingLink;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Break Existing Link;
+                                 ISL=Brj¢ta tengingu];
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=RemoveLine;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoIntegrationRecord@10008850 : Record 10008851;
+                               BEGIN
+                                 IF KontoIntegrationRecord.GET(ID) THEN
+                                   KontoIntegrationRecord.DELETE;
+                                 Status := Status::"New in Konto";
+                                 MODIFY;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 10008850;0;Container;
+                ContainerType=ContentArea }
+
+    { 10008851;1;Group    ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 10008861;2;Field    ;
+                SourceExpr=Status }
+
+    { 10008852;2;Field    ;
+                SourceExpr="Customer Registration No." }
+
+    { 10008853;2;Field    ;
+                SourceExpr="Customer Name" }
+
+    { 10008854;2;Field    ;
+                SourceExpr="Customer Address" }
+
+    { 10008855;2;Field    ;
+                SourceExpr="Customer Post Code" }
+
+    { 10008856;2;Field    ;
+                SourceExpr="Customer City" }
+
+    { 10008857;2;Field    ;
+                SourceExpr="Customer Tax Exempt" }
+
+    { 10008858;2;Field    ;
+                SourceExpr="Record Updated" }
+
+  }
+  CODE
+  {
+    VAR
+      IsLinked@10008850 : Boolean;
+
+    PROCEDURE Set@1(VAR TempCustomer@10008850 : TEMPORARY Record 10008851);
+    BEGIN
+      COPY(TempCustomer,TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

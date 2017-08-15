@@ -1,0 +1,352 @@
+OBJECT Page 10008850 Konto Service Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=13.05.17;
+    Time=14:39:25;
+    Version List=KONTO9.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=[ENU=Konto Service Setup;
+               ISL=Konto Áj¢nustugrunnur];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10008850;
+    PageType=Card;
+    PromotedActionCategoriesML=[ENU=New,Process,Page,Encryption,Konto Data;
+                                ISL=NÏtt,Vinnsla,S°–a,Dulritun,Konto gîgn];
+    ShowFilter=No;
+    OnOpenPage=BEGIN
+                 RESET;
+                 IF NOT GET THEN BEGIN
+                   INIT;
+                   INSERT(TRUE);
+                   SetURLsToDefault;
+                   SetDefaultVATBusPstGrp;
+                 END;
+                 UpdateBasedOnEnable;
+               END;
+
+    OnAfterGetRecord=BEGIN
+                       UpdateBasedOnEnable;
+                     END;
+
+    OnQueryClosePage=BEGIN
+                       IF NOT Enabled THEN
+                         IF NOT CONFIRM(STRSUBSTNO(EnableServiceQst,CurrPage.CAPTION),TRUE) THEN
+                           EXIT(FALSE);
+                     END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           UpdateEncryptedField("Password Key",Password);
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 10036006;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 10036005;1   ;Action    ;
+                      Name=SetURLsToDefault;
+                      CaptionML=[ENU=Set URLs to Default;
+                                 ISL=Setja sj†lfgefnar sl¢–ir];
+                      ToolTipML=ENU=Change the service and sign-up URLs to their default values. You cannot cancel this action to revert back to the current values.;
+                      Promoted=Yes;
+                      Enabled=EditableByNotEnabled;
+                      Image=Restore;
+                      PromotedCategory=Process;
+                      OnAction=BEGIN
+                                 SetURLsToDefault;
+                               END;
+                                }
+      { 10036004;1   ;Action    ;
+                      Name=TestConnection;
+                      CaptionML=[ENU=Test Connection;
+                                 ISL=Pr¢fa tengingu];
+                      ToolTipML=ENU=Check that the settings that you added are correct and the connection to the Data Exchange Service is working.;
+                      Promoted=Yes;
+                      Image=Link;
+                      PromotedCategory=Process;
+                      OnAction=VAR
+                                 KontoServiceMgt@10008850 : Codeunit 10008850;
+                               BEGIN
+                                 KontoServiceMgt.TestConnection(Rec);
+                               END;
+                                }
+      { 10008861;0   ;ActionContainer;
+                      ActionContainerType=RelatedInformation }
+      { 10036003;1   ;Action    ;
+                      Name=KontoCustomers;
+                      CaptionML=[ENU=Show Konto Customers;
+                                 ISL=SÏna Konto vi–skiptamenn];
+                      ToolTipML=ENU=Download Customer List from Konto and display;
+                      Promoted=Yes;
+                      Enabled=NOT EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=CoupledCustomer;
+                      PromotedCategory=Category5;
+                      OnAction=BEGIN
+                                 ShowKontoCustomers;
+                               END;
+                                }
+      { 10036007;1   ;Action    ;
+                      Name=KontoCustomerCount;
+                      CaptionML=[ENU=Show Konto No. of Customers;
+                                 ISL=SÏna fjîlda Konto vi–skiptamanna];
+                      ToolTipML=ENU=Download No. of Customers from Konto and display;
+                      Enabled=NOT EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=CustomerRating;
+                      PromotedCategory=Category5;
+                      OnAction=BEGIN
+                                 ShowKontoNoOfCustomers;
+                               END;
+                                }
+      { 10036010;1   ;Action    ;
+                      Name=KontoItems;
+                      CaptionML=[ENU=Show Konto Items;
+                                 ISL=SÏna Konto vîrur];
+                      ToolTipML=ENU=Download Item List from Konto and display;
+                      Promoted=Yes;
+                      Enabled=NOT EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=CoupledItem;
+                      PromotedCategory=Category5;
+                      OnAction=BEGIN
+                                 ShowKontoItems;
+                               END;
+                                }
+      { 10036009;1   ;Action    ;
+                      Name=KontoItemCount;
+                      CaptionML=[ENU=Show Konto No. of Items;
+                                 ISL=SÏna fjîldi Konto vara];
+                      ToolTipML=ENU=Download No. of Items from Konto and display;
+                      Enabled=NOT EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=ItemReservation;
+                      PromotedCategory=Category5;
+                      OnAction=BEGIN
+                                 ShowKontoNoOfItems;
+                               END;
+                                }
+      { 10008862;1   ;Action    ;
+                      Name=KontoInvoices;
+                      CaptionML=[ENU=Show Konto Invoices;
+                                 ISL=SÏna Konto reikninga];
+                      ToolTipML=ENU=Download Item List from Konto and display;
+                      Promoted=Yes;
+                      Enabled=NOT EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=CoupledInvoice;
+                      PromotedCategory=Category5;
+                      OnAction=BEGIN
+                                 ShowKontoInvoices;
+                               END;
+                                }
+      { 10036013;1   ;Action    ;
+                      Name=KontoExpenses;
+                      CaptionML=[ENU=Show Konto Expenses;
+                                 ISL=SÏna Konto kostna–];
+                      ToolTipML=ENU=Download Expense List from Konto and display;
+                      Promoted=Yes;
+                      Enabled=NOT EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=CoupledCurrency;
+                      PromotedCategory=Category5;
+                      OnAction=BEGIN
+                                 ShowKontoExpenses;
+                               END;
+                                }
+      { 10036012;1   ;Action    ;
+                      Name=KontoExpenseCount;
+                      CaptionML=[ENU=Show Konto No. of Expenses;
+                                 ISL=SÏna fjîlda Konto kostna–ar];
+                      ToolTipML=ENU=Download No. of Customers from Konto and display;
+                      Enabled=NOT EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=Cost;
+                      PromotedCategory=Category5;
+                      OnAction=BEGIN
+                                 ShowKontoNoOfExpenses;
+                               END;
+                                }
+      { 10008856;1   ;Action    ;
+                      Name=EncryptionManagement;
+                      CaptionML=[ENU=Encryption Management;
+                                 ISL=Stj¢rnun dulritunar];
+                      ToolTipML=ENU=Enable or disable data encryption. Data encryption helps make sure that unauthorized users cannot read business data.;
+                      RunObject=Page 9905;
+                      Promoted=Yes;
+                      Enabled=EditableByNotEnabled;
+                      PromotedIsBig=Yes;
+                      Image=EncryptionKeys;
+                      PromotedCategory=Category4;
+                      RunPageMode=View }
+      { 10008854;1   ;Action    ;
+                      Name=ActivityLog;
+                      CaptionML=[ENU=Activity Log;
+                                 ISL=A–ger–arann†ll];
+                      ToolTipML=ENU=See the status and any errors for the electronic document or OCR file that you send through the document exchange service.;
+                      Image=Log;
+                      OnAction=VAR
+                                 ActivityLog@1002 : Record 710;
+                               BEGIN
+                                 ActivityLog.ShowEntries(RECORDID);
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 10036002;0;Container;
+                ContainerType=ContentArea }
+
+    { 10036001;1;Group    ;
+                Name=General;
+                CaptionML=[ENU=General;
+                           ISL=Almennt];
+                GroupType=Group }
+
+    { 10036000;2;Group    ;
+                GroupType=Group }
+
+    { 10008864;3;Field    ;
+                ToolTipML=ENU=Specifies the user name that represents your company's login to the Konto service.;
+                SourceExpr="User Name";
+                Editable=EditableByNotEnabled;
+                ShowMandatory=TRUE }
+
+    { 10008863;3;Field    ;
+                Name=Password;
+                ExtendedDatatype=Masked;
+                CaptionML=ENU=Password;
+                ToolTipML=ENU=Specifies the password that is used for your company's login to the Konto service.;
+                SourceExpr=Password;
+                Editable=EditableByNotEnabled;
+                OnValidate=BEGIN
+                             SavePassword("Password Key",Password);
+                             IF Password <> '' THEN
+                               CheckEncryption;
+                           END;
+
+                ShowMandatory=TRUE }
+
+    { 10008860;2;Group    ;
+                GroupType=Group }
+
+    { 10008859;3;Field    ;
+                ToolTipML=ENU=Specifies if the service is enabled.;
+                SourceExpr=Enabled;
+                OnValidate=VAR
+                             ServiceMgt@10008850 : Codeunit 10008850;
+                           BEGIN
+                             IF Enabled THEN
+                               ServiceMgt.VerifyAccountingDetails(Rec);
+                             UpdateBasedOnEnable;
+                             CurrPage.UPDATE
+                           END;
+                            }
+
+    { 10008858;3;Field    ;
+                AssistEdit=No;
+                SourceExpr=ShowEnableWarning;
+                Enabled=NOT EditableByNotEnabled;
+                Editable=False;
+                OnDrillDown=BEGIN
+                              DrilldownCode;
+                            END;
+                             }
+
+    { 10008857;1;Group    ;
+                Name=Service;
+                CaptionML=[ENU=Service;
+                           ISL=Ëj¢nusta];
+                GroupType=Group }
+
+    { 10008855;2;Field    ;
+                ToolTipML=ENU=Specifies the address of the Konto service. The service specified in the Service URL field is called when you send and receive data for invoicing.;
+                SourceExpr="Service URL";
+                Editable=EditableByNotEnabled;
+                ShowMandatory=TRUE }
+
+    { 10036011;2;Field    ;
+                SourceExpr="Def. VAT Bus. Pst. Gr. (Price)";
+                Enabled=EditableByNotEnabled }
+
+    { 10008853;1;Group    ;
+                Name=CustomerStatus;
+                CaptionML=[ENU=Status;
+                           ISL=Sta–a];
+                GroupType=Group }
+
+    { 10008852;2;Field    ;
+                ToolTipML=ENU=Specifies your company's name at the provider of the Konto service.;
+                SourceExpr="Account Name";
+                Importance=Promoted;
+                Editable=False }
+
+    { 10008851;2;Field    ;
+                ToolTipML=ENU=Specifies your company's customer ID at the provider of the Konto service.;
+                SourceExpr="Account Registration ID";
+                Editable=False }
+
+    { 10008850;2;Field    ;
+                ToolTipML=ENU=Specifies your company's VAT number at the provider of the Konto service.;
+                SourceExpr="Account VAT Registration No.";
+                Importance=Promoted;
+                Editable=False }
+
+  }
+  CODE
+  {
+    VAR
+      Password@10008853 : Text[50];
+      ShowEnableWarning@10008852 : Text;
+      EditableByNotEnabled@10008851 : Boolean;
+      CheckedEncryption@10008850 : Boolean;
+      EnabledWarningTok@10008857 : TextConst 'ENU=You must disable the service before you can make changes.;ISL=Ë£ ver–ur a– afvirkja Áj¢nustuna †–ur en breytingar eru ger–ar.';
+      DisableEnableQst@10008856 : TextConst 'ENU=Do you want to disable the Konto service?;ISL=Viltu afvirkja Konto Áj¢nustuna?';
+      EnableServiceQst@10008855 : TextConst '@@@="%1 = pagecaption (Konto Service Setup)";ENU=The %1 is not enabled. Are you sure you want to exit?;ISL=%1 er ekki virk. Ertu viss um a– Á£ viljir hëtta?';
+      EncryptionIsNotActivatedQst@10008854 : TextConst 'ENU=Data encryption is not activated. It is recommended that you encrypt data. \Do you want to open the Data Encryption Management window?;ISL=Dulritun gagna er ekki virk. Mëlt er me– dulritun gagna. \µ a– opna gluggann fyrir stj¢rnun dulritunar?';
+
+    LOCAL PROCEDURE UpdateBasedOnEnable@2();
+    BEGIN
+      EditableByNotEnabled := NOT Enabled;
+      ShowEnableWarning := '';
+      IF CurrPage.EDITABLE AND Enabled THEN
+        ShowEnableWarning := EnabledWarningTok;
+    END;
+
+    LOCAL PROCEDURE DrilldownCode@1();
+    BEGIN
+      IF CONFIRM(DisableEnableQst,TRUE) THEN BEGIN
+        Enabled := FALSE;
+        UpdateBasedOnEnable;
+        CurrPage.UPDATE;
+      END;
+    END;
+
+    LOCAL PROCEDURE UpdateEncryptedField@3(InputGUID@1000 : GUID;VAR Text@1001 : Text[50]);
+    BEGIN
+      IF ISNULLGUID(InputGUID) THEN
+        Text := ''
+      ELSE
+        Text := '*************';
+    END;
+
+    LOCAL PROCEDURE CheckEncryption@6();
+    BEGIN
+      IF NOT CheckedEncryption AND NOT ENCRYPTIONENABLED THEN BEGIN
+        CheckedEncryption := TRUE;
+        IF NOT ENCRYPTIONENABLED THEN
+          IF CONFIRM(EncryptionIsNotActivatedQst) THEN
+            PAGE.RUN(PAGE::"Data Encryption Management");
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

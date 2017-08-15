@@ -1,0 +1,376 @@
+OBJECT Codeunit 10008853 Konto Sales Invoice Mgt.
+{
+  OBJECT-PROPERTIES
+  {
+    Date=30.05.17;
+    Time=16:20:29;
+    Version List=KONTO9.00;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      Setup@10008858 : Record 10008850;
+      GLSetup@10008856 : Record 98;
+      TempErrorMessage@10008850 : TEMPORARY Record 700;
+      Text001@10008851 : TextConst 'ENU=is not within your range of allowed posting dates;ISL=er ekki † leyfilegu bili b¢kunardagsetninga';
+      MessageType@10008852 : 'Error,Warning,Information';
+      Text002@10008853 : TextConst 'ENU=%1 %2 has not been syncronized to NAV.;ISL=%1 %2 hefur ekki veri– samstillt vi– NAV.';
+      Text003@10008854 : TextConst 'ENU=%1 %2 is blocked;ISL=%1 %2 er loku–';
+      Text004@10008855 : TextConst 'ENU="Invoice Amount mismatch; Invoice: %1, Line totals: %2";ISL="Upphë– reiknings passar ekki; Reikningur: %1, samtîlur £r l°num: %2"';
+      Text005@10008857 : TextConst 'ENU=Unit of Measure %1 not found on Item No. %2;ISL=Mëlieining %1 finnst ekki fyrir vîrun£mer %2';
+      Text006@10008859 : TextConst 'ENU=%1 %2 %3 not found;ISL=%1 %2 %3 finnst ekki';
+      Text007@10008860 : TextConst 'ENU=%1 %2 %3 does not match %4 %5 in invoice line.;ISL=%1 %2 %3 passar ekki vi– %4 %5 ° reikningssl°nu.';
+      IfNotEqualToErr@10008861 : TextConst '@@@="%1=caption of a field, %2=key of record, %3=integer";ENU=''%1'' in ''%2'' must be equal to %3.;ISL=''%1'' ° ''%2'' ver–ur a– vera %3.';
+
+    PROCEDURE CreateAndPostInvoice@10008850(VAR TempInvoice@10008850 : TEMPORARY Record 10008851);
+    VAR
+      SalesHeader@10008853 : Record 36;
+      Customer@10008854 : Record 18;
+      TempInvoiceItems@10008851 : TEMPORARY Record 10008851;
+      TempInvoiceCustomer@10008852 : TEMPORARY Record 10008851;
+    BEGIN
+      GLSetup.GET;
+      Setup.GET;
+      Setup.TESTFIELD("Def. VAT Bus. Pst. Gr. (Price)");
+      WITH TempInvoice DO BEGIN
+        TempErrorMessage.SetContext(SalesHeader);
+        TestInvoice(TempInvoice);
+        GetInvoiceItems(TempInvoiceItems);
+        TestInvoiceItems(TempInvoiceItems);
+        TestInvoiceItemTotals(TempInvoice,TempInvoiceItems);
+        GetInvoiceCustomer(TempInvoiceCustomer);
+        TestInvoiceCustomer(TempInvoiceCustomer,Customer);
+        TempErrorMessage.ShowErrorMessages(FALSE);
+        IF TempErrorMessage.HasErrors(FALSE) THEN
+          EXIT;
+        TempErrorMessage.DELETEALL;
+
+        IF NOT FindInvoice(SalesHeader,TempInvoice) THEN
+          CreateInvoice(SalesHeader,TempInvoice);
+        AddCustomerToInvoice(SalesHeader,Customer);
+        AddInvoiceDetails(SalesHeader,TempInvoice);
+        ModifyInvoice(SalesHeader);
+        DeleteExistingInvoiceLines(SalesHeader,TempInvoiceItems);
+        CreateInvoiceLines(SalesHeader,TempInvoiceItems);
+        ValidateInvoice(TempInvoice,SalesHeader);
+        TempErrorMessage.ShowErrorMessages(FALSE);
+        IF TempErrorMessage.HasErrors(FALSE) THEN
+          EXIT;
+        PostInvoice(SalesHeader);
+        Status := Status::Synchronized;
+        MODIFY;
+      END;
+    END;
+
+    LOCAL PROCEDURE TestInvoice@10008858(VAR TempInvoice@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+      GenJnlCheckLine@10008852 : Codeunit 11;
+    BEGIN
+      WITH TempInvoice DO BEGIN
+        TempErrorMessage.LogIfEmpty(TempInvoice,FIELDNO("Invoice Number"),MessageType::Error);
+        TempErrorMessage.LogIfEmpty(TempInvoice,FIELDNO("Invoice Amount"),MessageType::Error);
+        TempErrorMessage.LogIfEmpty(TempInvoice,FIELDNO("Invoice Currency Code"),MessageType::Error);
+        TempErrorMessage.LogIfEmpty(TempInvoice,FIELDNO("Invoice Issue Date"),MessageType::Error);
+        TempErrorMessage.LogIfEmpty(TempInvoice,FIELDNO("Invoice Due Date"),MessageType::Warning);
+      END;
+    END;
+
+    LOCAL PROCEDURE TestInvoiceItems@10008854(VAR TempInvoiceItems@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+      Item@10008852 : Record 27;
+      VATPostingSetup@10008854 : Record 325;
+      RecRef@10008853 : RecordRef;
+    BEGIN
+      WITH TempInvoiceItems DO BEGIN
+        FINDSET;
+        REPEAT
+          IF NOT KontoIntegrationRecord.GET(ID) THEN
+            TempErrorMessage.LogMessage(Item,Item.FIELDNO(Description),MessageType::Error,STRSUBSTNO(Text002,Item.TABLECAPTION,TempInvoiceItems."Item Description"))
+          ELSE
+            IF NOT RecRef.GET(KontoIntegrationRecord."Related Record ID") THEN
+              TempErrorMessage.LogMessage(Item,Item.FIELDNO(Description),MessageType::Error,STRSUBSTNO(Text002,Item.TABLECAPTION,TempInvoiceItems."Item Description"))
+            ELSE BEGIN
+              RecRef.SETTABLE(Item);
+              IF Item.Type = Item.Type::Inventory THEN
+                TempErrorMessage.LogIfEmpty(Item,Item.FIELDNO("Inventory Posting Group"),MessageType::Error);
+              TempErrorMessage.LogIfEmpty(Item,Item.FIELDNO("Gen. Prod. Posting Group"),MessageType::Error);
+              TempErrorMessage.LogIfEmpty(Item,Item.FIELDNO("VAT Prod. Posting Group"),MessageType::Error);
+              IF Item.Blocked THEN
+                TempErrorMessage.LogMessage(Item,Item.FIELDNO("No."),MessageType::Error,STRSUBSTNO(Text003,Item.TABLECAPTION,TempInvoiceItems."Item Description"));
+              IF FindItemUoMCode(Item."No.","Item Unit of Measure","Item Unit of Measure") THEN
+                MODIFY
+              ELSE
+                TempErrorMessage.LogMessage(Item,Item.FIELDNO("No."),MessageType::Error,STRSUBSTNO(Text005,"Item Unit of Measure",Item."No."));
+              IF NOT VATPostingSetup.GET(Setup."Def. VAT Bus. Pst. Gr. (Price)",Item."VAT Prod. Posting Group") THEN
+                TempErrorMessage.LogMessage(
+                  VATPostingSetup,VATPostingSetup.FIELDNO("VAT Prod. Posting Group"),MessageType::Error,
+                  STRSUBSTNO(Text006,TABLECAPTION,Setup."Def. VAT Bus. Pst. Gr. (Price)",Item."VAT Prod. Posting Group"))
+              ELSE
+                IF VATPostingSetup."Tax Category" <> "Item Tax Category" THEN
+                  TempErrorMessage.LogMessage(
+                    Item,Item.FIELDNO("No."),MessageType::Error,
+                    STRSUBSTNO(Text007,
+                      VATPostingSetup.TABLECAPTION,VATPostingSetup.FIELDCAPTION("Tax Category"),
+                      VATPostingSetup."Tax Category",FIELDCAPTION("Item Tax Category"),"Item Tax Category"));
+            END;
+        UNTIL NEXT = 0;
+      END;
+    END;
+
+    LOCAL PROCEDURE TestInvoiceCustomer@10008855(VAR TempInvoiceCustomer@10008850 : TEMPORARY Record 10008851;VAR Customer@10008852 : Record 18);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+      RecRef@10008853 : RecordRef;
+    BEGIN
+      WITH TempInvoiceCustomer DO BEGIN
+        FINDSET;
+        REPEAT
+          IF NOT KontoIntegrationRecord.GET(ID) THEN
+            TempErrorMessage.LogMessage(Customer,Customer.FIELDNO(Name),MessageType::Error,STRSUBSTNO(Text002,Customer.TABLECAPTION,TempInvoiceCustomer."Customer Name"))
+          ELSE
+            IF NOT RecRef.GET(KontoIntegrationRecord."Related Record ID") THEN
+              TempErrorMessage.LogMessage(Customer,Customer.FIELDNO(Name),MessageType::Error,STRSUBSTNO(Text002,Customer.TABLECAPTION,TempInvoiceCustomer."Customer Name"))
+            ELSE BEGIN
+              RecRef.SETTABLE(Customer);
+              TempErrorMessage.LogIfEmpty(Customer,Customer.FIELDNO("Customer Posting Group"),MessageType::Error);
+              TempErrorMessage.LogIfEmpty(Customer,Customer.FIELDNO("Gen. Bus. Posting Group"),MessageType::Error);
+              TempErrorMessage.LogIfEmpty(Customer,Customer.FIELDNO("VAT Bus. Posting Group"),MessageType::Error);
+              IF Customer.Blocked IN [Customer.Blocked::Invoice,Customer.Blocked::All] THEN
+                TempErrorMessage.LogMessage(Customer,FIELDNO(ID),MessageType::Error,STRSUBSTNO(Text003,Customer.TABLECAPTION,TempInvoiceCustomer."Customer Name"))
+            END;
+        UNTIL NEXT = 0;
+      END;
+    END;
+
+    LOCAL PROCEDURE TestInvoiceItemTotals@10008863(VAR TempInvoice@10008851 : TEMPORARY Record 10008851;VAR TempInvoiceItems@10008850 : TEMPORARY Record 10008851);
+    BEGIN
+      WITH TempInvoiceItems DO BEGIN
+        CALCSUMS("Item Amount Incl. VAT");
+        IF TempInvoice."Invoice Amount" <> "Item Amount Incl. VAT" THEN
+          TempErrorMessage.LogMessage(TempInvoice,TempInvoice.FIELDNO("Invoice Amount"),MessageType::Error,STRSUBSTNO(Text004,TempInvoice."Invoice Amount","Item Amount Incl. VAT"));
+      END;
+    END;
+
+    LOCAL PROCEDURE FindInvoice@10036011(VAR SalesHeader@10008851 : Record 36;TempInvoice@10008850 : TEMPORARY Record 10008851) : Boolean;
+    VAR
+      KontoIntegrationRecord@10008852 : Record 10008851;
+      ReleaseSalesDocument@10008854 : Codeunit 414;
+      RecRef@10008853 : RecordRef;
+    BEGIN
+      WITH KontoIntegrationRecord DO
+        IF GET(TempInvoice.ID) THEN
+          IF RecRef.GET("Related Record ID") THEN BEGIN
+            RecRef.SETTABLE(SalesHeader);
+            ReleaseSalesDocument.PerformManualReopen(SalesHeader);
+            EXIT(TRUE);
+          END ELSE
+            DELETE;
+    END;
+
+    LOCAL PROCEDURE CreateInvoice@10008860(VAR SalesHeader@10008853 : Record 36;TempInvoice@10008851 : TEMPORARY Record 10008851);
+    VAR
+      KontoIntegrationRecord@10008850 : Record 10008851;
+    BEGIN
+      WITH SalesHeader DO BEGIN
+        INIT;
+        IF TempInvoice."Invoice Type" = 'credit' THEN
+          "Document Type" := "Document Type"::"Credit Memo"
+        ELSE
+          "Document Type" := "Document Type"::Invoice;
+        "No." := '';
+        INSERT(TRUE);
+        KontoIntegrationRecord := TempInvoice;
+        KontoIntegrationRecord."Related Record ID" := RECORDID;
+        KontoIntegrationRecord.INSERT;
+      END;
+    END;
+
+    LOCAL PROCEDURE AddCustomerToInvoice@10008857(VAR SalesHeader@10008851 : Record 36;Customer@10008850 : Record 18);
+    BEGIN
+      WITH SalesHeader DO BEGIN
+        SetHideValidationDialog(TRUE);
+        VALIDATE("Sell-to Customer No.",Customer."No.");
+        VALIDATE("Prices Including VAT",FALSE);
+        "Bal. Account Type" := "Bal. Account Type"::"G/L Account";
+        "Bal. Account No." := '';
+      END;
+    END;
+
+    LOCAL PROCEDURE AddInvoiceDetails@10008859(VAR SalesHeader@10008851 : Record 36;TempInvoice@10008850 : TEMPORARY Record 10008851);
+    BEGIN
+      WITH TempInvoice DO BEGIN
+        SalesHeader.VALIDATE("Posting Date","Invoice Issue Date");
+        IF "Invoice Due Date" <> 0D THEN
+          SalesHeader.VALIDATE("Due Date","Invoice Due Date");
+        SalesHeader.VALIDATE("External Document No.","Invoice Number");
+        IF "Invoice Currency Code" <> GLSetup."LCY Code" THEN
+          SalesHeader.VALIDATE("Currency Code","Invoice Currency Code");
+        SalesHeader."Posting Description" := COPYSTR("Invoice Description",1,MAXSTRLEN(SalesHeader."Posting Description"));
+        IF "Invoice Settlement Date" <> 0D THEN
+          SalesHeader.VALIDATE("Settlement Date","Invoice Settlement Date");
+      END;
+    END;
+
+    LOCAL PROCEDURE AddInvoiceSettlementDate@10036004(VAR SalesHeader@10008853 : Record 36;TempInvoice@10008852 : TEMPORARY Record 10008851);
+    VAR
+      DataTypeMgt@10008851 : Codeunit 701;
+      RecRef@10008850 : RecordRef;
+      FldRef@10008854 : FieldRef;
+    BEGIN
+      WITH TempInvoice DO BEGIN
+        IF "Invoice Settlement Date" = 0D THEN EXIT;
+        RecRef.GETTABLE(SalesHeader);
+        IF DataTypeMgt.FindFieldByName(RecRef,FldRef,'Settlement Date') THEN
+          FldRef.VALIDATE("Invoice Settlement Date");
+        IF DataTypeMgt.FindFieldByName(RecRef,FldRef,'Final Due Date') THEN
+          FldRef.VALIDATE("Invoice Settlement Date");
+        RecRef.SETTABLE(SalesHeader);
+      END;
+    END;
+
+    LOCAL PROCEDURE ModifyInvoice@10036007(VAR SalesHeader@10008850 : Record 36);
+    BEGIN
+      WITH SalesHeader DO
+        MODIFY;
+    END;
+
+    LOCAL PROCEDURE DeleteExistingInvoiceLines@10008861(VAR SalesHeader@10008850 : Record 36;VAR TempInvoiceItems@10008851 : TEMPORARY Record 10008851);
+    VAR
+      SalesLine@10008852 : Record 37;
+    BEGIN
+      WITH SalesLine DO BEGIN
+        SetHideValidationDialog(TRUE);
+        SETRANGE("Document Type",SalesHeader."Document Type");
+        SETRANGE("Document No.",SalesHeader."No.");
+        IF NOT ISEMPTY THEN
+          DELETEALL(TRUE);
+      END;
+    END;
+
+    LOCAL PROCEDURE CreateInvoiceLines@10036015(VAR SalesHeader@10008850 : Record 36;VAR TempInvoiceItems@10008851 : TEMPORARY Record 10008851);
+    VAR
+      SalesLine@10008852 : Record 37;
+      KontoIntegrationRecord@10008855 : Record 10008851;
+      Item@10008854 : Record 27;
+      RecRef@10008853 : RecordRef;
+    BEGIN
+      WITH TempInvoiceItems DO BEGIN
+        FINDSET;
+        REPEAT
+          KontoIntegrationRecord.GET(ID);
+          RecRef.GET(KontoIntegrationRecord."Related Record ID");
+          RecRef.SETTABLE(Item);
+          SalesLine.INIT;
+          SalesLine."Document Type" := SalesHeader."Document Type";
+          SalesLine."Document No." := SalesHeader."No.";
+          SalesLine."Line No." += 10000;
+          SalesLine.VALIDATE(Type,SalesLine.Type::Item);
+          SalesLine.VALIDATE("No.",Item."No.");
+          SalesLine.VALIDATE(Quantity,"Item Quantity");
+          SalesLine.VALIDATE("Unit of Measure Code","Item Unit of Measure");
+          SalesLine.VALIDATE("Unit Price","Item Unit Price");
+          SalesLine.VALIDATE("Line Amount","Item Amount");
+          SalesLine.INSERT(TRUE);
+        UNTIL NEXT = 0;
+      END;
+    END;
+
+    LOCAL PROCEDURE ValidateInvoice@10008862(VAR TempInvoice@10008851 : TEMPORARY Record 10008851;VAR SalesHeader@10008850 : Record 36);
+    VAR
+      TotalSalesLine@10008859 : Record 37;
+      TotalSalesLineLCY@10008858 : Record 37;
+      SalesLine@10008861 : Record 37;
+      TempSalesLine@10008860 : TEMPORARY Record 37;
+      SalesPost@10008857 : Codeunit 80;
+      VATAmount@10008856 : Decimal;
+      VATAmountText@10008855 : Text[30];
+      ProfitLCY@10008854 : Decimal;
+      ProfitPct@10008853 : Decimal;
+      TotalAdjCostLCY@10008852 : Decimal;
+    BEGIN
+      WITH SalesHeader DO BEGIN
+        CalcInvDiscForHeader;
+        COMMIT;
+
+        CLEAR(SalesLine);
+        CLEAR(TotalSalesLine);
+        CLEAR(TotalSalesLineLCY);
+        CLEAR(SalesPost);
+
+        SalesPost.GetSalesLines(SalesHeader,TempSalesLine,0);
+        CLEAR(SalesPost);
+        SalesPost.SumSalesLinesTemp(
+          SalesHeader,TempSalesLine,0,TotalSalesLine,TotalSalesLineLCY,
+          VATAmount,VATAmountText,ProfitLCY,ProfitPct,TotalAdjCostLCY);
+        IF TotalSalesLine."Amount Including VAT" <> TempInvoice."Invoice Amount" THEN
+          TempErrorMessage.LogMessage(
+            SalesHeader,
+            FIELDNO("Amount Including VAT"),
+            MessageType::Error,
+            STRSUBSTNO(IfNotEqualToErr,FIELDCAPTION("Amount Including VAT"),TABLECAPTION,TempInvoice."Invoice Amount"));
+      END;
+    END;
+
+    LOCAL PROCEDURE FindItemUoMCode@10036022(ItemNo@10008852 : Code[20];InternationalUoMCode@10008853 : Code[10];VAR UoMCode@10008854 : Code[10]) Found : Boolean;
+    VAR
+      ItemUoM@10008851 : Record 5404;
+      UnitofMeasure@10008850 : Record 204;
+    BEGIN
+      UnitofMeasure.SETRANGE("International Standard Code",InternationalUoMCode);
+      WITH ItemUoM DO BEGIN
+        SETRANGE("Item No.",ItemNo);
+        IF FINDSET THEN REPEAT
+          UnitofMeasure.SETRANGE(Code,Code);
+          IF UnitofMeasure.FINDFIRST THEN BEGIN
+            UoMCode := Code;
+            EXIT(TRUE);
+          END;
+        UNTIL NEXT = 0;
+      END;
+    END;
+
+    LOCAL PROCEDURE PostInvoice@10036000(VAR SalesHeader@10008850 : Record 36);
+    BEGIN
+      CODEUNIT.RUN(CODEUNIT::"Sales-Post",SalesHeader);
+    END;
+
+    [EventSubscriber(Codeunit,80,OnAfterPostSalesDoc,"",Skip)]
+    LOCAL PROCEDURE OnPostFinished@10008851(VAR SalesHeader@10008850 : Record 36;VAR GenJnlPostLine@10008851 : Codeunit 12;SalesShptHdrNo@10008852 : Code[20];RetRcpHdrNo@10008853 : Code[20];SalesInvHdrNo@10008854 : Code[20];SalesCrMemoHdrNo@10008855 : Code[20]);
+    VAR
+      SalesInvoiceHeader@10008856 : Record 112;
+      SalesCrMemoHeader@10008857 : Record 114;
+      KontoIntegrationRecord@10008858 : Record 10008851;
+    BEGIN
+      WITH KontoIntegrationRecord DO BEGIN
+        SETRANGE("Related Record ID",SalesHeader.RECORDID);
+        IF NOT FINDFIRST THEN EXIT;
+        IF SalesInvHdrNo <> '' THEN BEGIN
+          SalesInvoiceHeader.GET(SalesInvHdrNo);
+          MODIFYALL(Status,Status::"Updated in NAV");
+          MODIFYALL("Table ID",DATABASE::"Sales Invoice Header");
+          MODIFYALL(Posted,TRUE);
+          MODIFYALL("Related Record ID",SalesInvoiceHeader.RECORDID);
+        END;
+        IF SalesCrMemoHdrNo <> '' THEN BEGIN
+          SalesCrMemoHeader.GET(SalesCrMemoHdrNo);
+          MODIFYALL(Status,Status::"Updated in NAV");
+          MODIFYALL("Table ID",DATABASE::"Sales Cr.Memo Header");
+          MODIFYALL(Posted,TRUE);
+          MODIFYALL("Related Record ID",SalesInvoiceHeader.RECORDID);
+        END;
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

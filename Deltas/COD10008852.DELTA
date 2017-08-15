@@ -1,0 +1,424 @@
+OBJECT Codeunit 10008852 Konto Data Synchronize Mgt.
+{
+  OBJECT-PROPERTIES
+  {
+    Date=30.05.17;
+    Time=16:13:31;
+    Version List=KONTO9.00;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      CustomerFoundQst@10008850 : TextConst 'ENU=Customer No. %1 found in NAV, link to this Konto Customer?;ISL=ViÐskiptamaÐur nr. %1 finnst ¡ NAV, tengja viÐ çennan Konto viÐskiptamann?';
+      ItemFoundQst@10008852 : TextConst 'ENU=Item No. %1 found in NAV, link to this Konto Item?;ISL=V”runr. %1 finnst ¡ NAV, tengja viÐ çetta Konto v”run£mer?';
+      TaxCategoryNotFoundErr@10008853 : TextConst 'ENU=Unable to map Tax Category %1 to Item posting setup!;ISL=N Ði ekki aÐ tengja skattflokk %1 til v”rub¢kunargrunn!';
+      VATPostingSetupNotFoundErr@10008854 : TextConst 'ENU=Unable to map Item posting setup %1 %2 to Tax Category!;ISL=N Ði ekki aÐ tengja v”rub¢kunargrunn %1 %2 viÐ skattflokk!';
+      InternationalUoMNotFoundErr@10008855 : TextConst 'ENU=Unable to map International Standard Code %1 to Unit of Measure Code!;ISL=N Ði ekki aÐ tengja alçj¢Ðlegan staÐalk¢Ða %1 viÐ m‘lieiningark¢Ða!';
+      ItemUnitOfMeasureNotFoundErr@10008856 : TextConst 'ENU=Unable to map Unit of Measure Code %1 to International Standard Code!;ISL=N Ði ekki aÐ tengja m‘lieiningark¢Ða %1 viÐ alçj¢Ðlegan staÐalk¢Ða!';
+      AlreadyExistsErro@10008851 : TextConst 'ENU=%1 already exists in Konto;ISL=%1 er çegar fyrir hendi ¡ Konto';
+      TaxCategoryMismatchErr@10008857 : TextConst 'ENU=Konto Item Tax Category %1 does not match NAV Item Tax Category %2;ISL=Konto v”ruskattflokkur %1 passar ekki viÐ v”ruskattsflokk %2 NAV v”ru';
+
+    [EventSubscriber(Table,18,OnAfterModifyEvent,"",Skip)]
+    LOCAL PROCEDURE OnAfterCustomerModify@10008854(VAR Rec@10008850 : Record 18;VAR xRec@10008851 : Record 18;RunTrigger@10008852 : Boolean);
+    BEGIN
+      IF Rec.ISTEMPORARY THEN EXIT;
+      UpdateExistingIntegrationRecord(Rec.RECORDID);
+    END;
+
+    [EventSubscriber(Table,27,OnAfterModifyEvent,"",Skip)]
+    LOCAL PROCEDURE OnAfterItemModify@10036003(VAR Rec@10008850 : Record 27;VAR xRec@10008851 : Record 27;RunTrigger@10008852 : Boolean);
+    BEGIN
+      IF Rec.ISTEMPORARY THEN EXIT;
+      UpdateExistingIntegrationRecord(Rec.RECORDID);
+    END;
+
+    [EventSubscriber(Table,130,OnAfterDeleteEvent,"",Skip)]
+    LOCAL PROCEDURE OnAfterIcomingDocumentDelete@10036006(VAR Rec@10008850 : Record 130;RunTrigger@10008851 : Boolean);
+    BEGIN
+      IF Rec.ISTEMPORARY THEN EXIT;
+      DeleteExistingIntegrationRecord(Rec.RECORDID);
+    END;
+
+    [EventSubscriber(Table,130,OnAfterModifyEvent,"",Skip)]
+    LOCAL PROCEDURE OnAfterIcomingDocumentModify@10036010(VAR Rec@10008850 : Record 130;VAR xRec@10008851 : Record 130;RunTrigger@10008852 : Boolean);
+    BEGIN
+      IF Rec.ISTEMPORARY THEN EXIT;
+      IF Rec.Posted THEN
+        SetExistingIntegrationRecordPosted(Rec.RECORDID);
+    END;
+
+    PROCEDURE LinkToIntegrationRecord@10008850(VAR NewRecord@10008851 : Record 10008851);
+    VAR
+      KontoIntegrationRecord@10008850 : Record 10008851;
+      RecRef@10008852 : RecordRef;
+    BEGIN
+      WITH NewRecord DO BEGIN
+        IF ID = '' THEN EXIT;
+        IF KontoIntegrationRecord.GET(ID) THEN
+          IF RecRef.GET(KontoIntegrationRecord."Related Record ID") THEN BEGIN
+            "Related Record ID" := KontoIntegrationRecord."Related Record ID";
+            Posted := KontoIntegrationRecord.Posted;
+            CASE TRUE OF
+              KontoIntegrationRecord."Record Updated" > "Record Updated" :
+                BEGIN
+                  Status := Status::"Updated in NAV";
+                  "Record Updated" := KontoIntegrationRecord."Record Updated";
+                END;
+              KontoIntegrationRecord."Record Updated" < "Record Updated" :
+                Status := Status::"Updated in Konto";
+              ELSE
+                Status := Status::Synchronized;
+            END;
+          END;
+        INSERT;
+      END;
+    END;
+
+    LOCAL PROCEDURE CreateIntegrationRecord@10008858(VAR NewRecord@10008850 : Record 10008851);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+    BEGIN
+      WITH KontoIntegrationRecord DO BEGIN
+        TRANSFERFIELDS(NewRecord);
+        INSERT;
+      END;
+    END;
+
+    PROCEDURE CreateKontoCustomerFromNAV@10008857(VAR TempCustomer@10008850 : Record 10008851);
+    VAR
+      Customer@10008851 : Record 18;
+      KontoServiceMgt@10008852 : Codeunit 10008850;
+    BEGIN
+      IF PAGE.RUNMODAL(PAGE::"Customer List",Customer) = ACTION::LookupOK THEN
+        WITH TempCustomer DO BEGIN
+          ErrorIfExists(Customer.RECORDID);
+          FromCustomer(Customer);
+          KontoServiceMgt.CreateCustomer(TempCustomer);
+          IF ID <> '' THEN BEGIN
+            CreateIntegrationRecord(TempCustomer);
+            LinkToIntegrationRecord(TempCustomer);
+          END;
+        END;
+    END;
+
+    PROCEDURE CreateNAVCustomerFromKonto@10008851(VAR TempCustomer@10008852 : Record 10008851);
+    VAR
+      MiniCustomerTemplate@10008851 : Record 1300;
+      ConfigTemplateHeader@10000202 : Record 8618;
+      MiniConfigTemplates@10000201 : Page 1340;
+      Customer@10008850 : Record 18;
+      CustomerNo@10000200 : Code[20];
+    BEGIN
+      WITH TempCustomer DO BEGIN
+        IF Customer.GET("Customer Registration No.") THEN
+          IF CONFIRM(CustomerFoundQst,TRUE,"Customer Registration No.") THEN BEGIN
+            LinkCustomer(TempCustomer,Customer);
+            EXIT;
+          END ELSE
+           ERROR('');
+
+        ToCustomer(Customer);
+        Customer."Registration No." := Customer."No.";
+        ConfigTemplateHeader.SETRANGE("Table ID",DATABASE::Customer);
+        CASE ConfigTemplateHeader.COUNT OF
+          0:
+            Customer.INSERT(TRUE);
+          1:
+            BEGIN
+              ConfigTemplateHeader.FINDFIRST;
+              MiniCustomerTemplate.InsertCustomerFromTemplate(ConfigTemplateHeader,Customer);
+            END;
+          ELSE BEGIN
+            MiniConfigTemplates.SETTABLEVIEW(ConfigTemplateHeader);
+            MiniConfigTemplates.LOOKUPMODE(TRUE);
+            IF MiniConfigTemplates.RUNMODAL = ACTION::LookupOK THEN BEGIN
+              MiniConfigTemplates.GETRECORD(ConfigTemplateHeader);
+              MiniCustomerTemplate.InsertCustomerFromTemplate(ConfigTemplateHeader,Customer);
+            END ELSE
+              EXIT;
+          END;
+        END;
+        LinkCustomer(TempCustomer,Customer);
+      END;
+    END;
+
+    PROCEDURE LinkExistingNAVCustomerFromKonto@10008853(VAR TempCustomer@10008850 : Record 10008851);
+    VAR
+      Customer@10008851 : Record 18;
+    BEGIN
+      IF PAGE.RUNMODAL(PAGE::"Customer List",Customer) = ACTION::LookupOK THEN
+        LinkCustomer(TempCustomer,Customer);
+    END;
+
+    LOCAL PROCEDURE LinkCustomer@10008852(VAR TempCustomer@10008850 : Record 10008851;Customer@10008851 : Record 18);
+    VAR
+      KontoIntegrationRecord@10008852 : Record 10008851;
+    BEGIN
+      TempCustomer."Related Record ID" := Customer.RECORDID;
+      TempCustomer.Status := TempCustomer.Status::Synchronized;
+      TempCustomer.MODIFY;
+
+      KontoIntegrationRecord.INIT;
+      KontoIntegrationRecord.TRANSFERFIELDS(TempCustomer);
+      KontoIntegrationRecord.INSERT;
+    END;
+
+    PROCEDURE CreateKontoItemFromNAV@10008862(VAR TempItem@10008850 : Record 10008851);
+    VAR
+      Item@10008851 : Record 27;
+      KontoServiceMgt@10008852 : Codeunit 10008850;
+    BEGIN
+      IF PAGE.RUNMODAL(PAGE::"Item List",Item) = ACTION::LookupOK THEN
+        WITH TempItem DO BEGIN
+          ErrorIfExists(Item.RECORDID);
+          FromItem(Item);
+          GetTaxCategoryFromPostingSetup(Item,"Item Tax Category");
+          GetInternationalUoMFromItemUoM(Item,"Item Unit of Measure");
+          KontoServiceMgt.CreateItem(TempItem);
+          IF ID <> '' THEN BEGIN
+            CreateIntegrationRecord(TempItem);
+            LinkToIntegrationRecord(TempItem);
+          END;
+        END;
+    END;
+
+    PROCEDURE CreateNAVItemFromKonto@10008861(VAR TempItem@10008852 : Record 10008851);
+    VAR
+      ConfigTemplateHeader@10000201 : Record 8618;
+      MiniConfigTemplates@10000200 : Page 1340;
+      MiniItemTemplate@10008851 : Record 1301;
+      Item@10008850 : Record 27;
+    BEGIN
+      WITH TempItem DO BEGIN
+        ToItem(Item);
+        ConfigTemplateHeader.SETRANGE("Table ID",DATABASE::Item);
+        CASE ConfigTemplateHeader.COUNT OF
+          0:
+            Item.INSERT(TRUE);
+          1:
+            BEGIN
+              ConfigTemplateHeader.FINDFIRST;
+              MiniItemTemplate.InsertItemFromTemplate(ConfigTemplateHeader,Item);
+            END;
+          ELSE BEGIN
+            MiniConfigTemplates.SETTABLEVIEW(ConfigTemplateHeader);
+            MiniConfigTemplates.LOOKUPMODE(TRUE);
+            IF MiniConfigTemplates.RUNMODAL = ACTION::LookupOK THEN BEGIN
+              MiniConfigTemplates.GETRECORD(ConfigTemplateHeader);
+              MiniItemTemplate.InsertItemFromTemplate(ConfigTemplateHeader,Item);
+            END ELSE
+              EXIT;
+          END;
+        END;
+        SetInternationalUoMToUoMCode("Item Unit of Measure",Item);
+        SetTaxCategoryToPostingSetup("Item Tax Category",Item);
+        Item.MODIFY;
+        LinkItem(TempItem,Item);
+      END;
+    END;
+
+    PROCEDURE LinkExistingNAVItemFromKonto@10008860(VAR TempItem@10008850 : Record 10008851);
+    VAR
+      Item@10008851 : Record 27;
+      TaxCategory@10008852 : Code[10];
+    BEGIN
+      IF PAGE.RUNMODAL(PAGE::"Item List",Item) = ACTION::LookupOK THEN BEGIN
+        GetTaxCategoryFromPostingSetup(Item,TaxCategory);
+        IF TaxCategory <> TempItem."Item Tax Category" THEN
+          ERROR(TaxCategoryMismatchErr,TempItem."Item Tax Category",TaxCategory);
+        LinkItem(TempItem,Item);
+      END;
+    END;
+
+    LOCAL PROCEDURE LinkItem@10008859(VAR TempItem@10008850 : Record 10008851;Item@10008851 : Record 27);
+    VAR
+      KontoIntegrationRecord@10008852 : Record 10008851;
+    BEGIN
+      TempItem."Related Record ID" := Item.RECORDID;
+      TempItem.Status := TempItem.Status::Synchronized;
+      TempItem.MODIFY;
+
+      KontoIntegrationRecord.INIT;
+      KontoIntegrationRecord.TRANSFERFIELDS(TempItem);
+      KontoIntegrationRecord.INSERT;
+    END;
+
+    PROCEDURE LinkExistingNAVIncomingDocumentFromKonto@10036004(VAR TempExpense@10008850 : Record 10008851);
+    VAR
+      IncomingDocument@10008851 : Record 130;
+    BEGIN
+      IF PAGE.RUNMODAL(PAGE::"Incoming Documents",IncomingDocument) = ACTION::LookupOK THEN
+        LinkIncomingDocument(TempExpense,IncomingDocument);
+    END;
+
+    PROCEDURE CreateNAVIncomingDocumentFromKonto@10036008(VAR TempExpense@10008852 : Record 10008851);
+    VAR
+      IncomingDocument@10008850 : Record 130;
+    BEGIN
+      WITH TempExpense DO BEGIN
+        IncomingDocument.INSERT(TRUE);
+        ToIncomingDocument(IncomingDocument);
+        IncomingDocument.MODIFY;
+        LinkIncomingDocument(TempExpense,IncomingDocument);
+      END;
+    END;
+
+    LOCAL PROCEDURE LinkIncomingDocument@10036005(VAR TempExpense@10008850 : Record 10008851;IncomingDocument@10008851 : Record 130);
+    VAR
+      KontoIntegrationRecord@10008852 : Record 10008851;
+    BEGIN
+      TempExpense."Related Record ID" := IncomingDocument.RECORDID;
+      TempExpense.Status := TempExpense.Status::Synchronized;
+      TempExpense.Posted := IncomingDocument.Posted;
+      TempExpense.MODIFY;
+
+      KontoIntegrationRecord.INIT;
+      KontoIntegrationRecord.TRANSFERFIELDS(TempExpense);
+      KontoIntegrationRecord.INSERT;
+    END;
+
+    PROCEDURE UpdateExpensePosted@1(VAR TempExpense@10008851 : Record 10008851);
+    VAR
+      KontoIntegrationRecord@10008850 : Record 10008851;
+    BEGIN
+      WITH TempExpense DO BEGIN
+        IF KontoIntegrationRecord.GET(ID) THEN BEGIN
+          Posted := KontoIntegrationRecord.Posted;
+        END ELSE BEGIN
+          Posted := FALSE;
+          Status := Status::"New in Konto";
+        END;
+        MODIFY;
+      END;
+    END;
+
+    LOCAL PROCEDURE UpdateExistingIntegrationRecord@10008855(RelatedRecordID@10008850 : RecordID);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+    BEGIN
+      WITH KontoIntegrationRecord DO BEGIN
+        SETRANGE("Related Record ID",RelatedRecordID);
+        IF FINDFIRST THEN BEGIN
+          "Record Updated" := CURRENTDATETIME;
+          MODIFY;
+        END;
+      END;
+    END;
+
+    LOCAL PROCEDURE DeleteExistingIntegrationRecord@10036007(RelatedRecordID@10008850 : RecordID);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+    BEGIN
+      WITH KontoIntegrationRecord DO BEGIN
+        SETRANGE("Related Record ID",RelatedRecordID);
+        IF NOT ISEMPTY THEN
+          DELETEALL;
+      END;
+    END;
+
+    LOCAL PROCEDURE SetExistingIntegrationRecordPosted@10036009(RelatedRecordID@10008850 : RecordID);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+    BEGIN
+      WITH KontoIntegrationRecord DO BEGIN
+        SETRANGE("Related Record ID",RelatedRecordID);
+        IF NOT ISEMPTY THEN
+          MODIFYALL(Posted,TRUE);
+      END;
+    END;
+
+    LOCAL PROCEDURE ErrorIfExists@10008856(RelatedRecordID@10008850 : RecordID);
+    VAR
+      KontoIntegrationRecord@10008851 : Record 10008851;
+    BEGIN
+      WITH KontoIntegrationRecord DO BEGIN
+        SETRANGE("Related Record ID",RelatedRecordID);
+        IF FINDFIRST THEN
+          ERROR(AlreadyExistsErro,FORMAT("Related Record ID"));
+      END;
+    END;
+
+    LOCAL PROCEDURE SetTaxCategoryToPostingSetup@10008863(TaxCategory@10008850 : Code[10];VAR Item@10008851 : Record 27);
+    VAR
+      VATPostingSetup@10008853 : Record 325;
+      GenProductPostingGroup@10008854 : Record 251;
+    BEGIN
+      WITH VATPostingSetup DO BEGIN
+        SETRANGE("VAT Bus. Posting Group",GetDefVATBusPostingGrpCode);
+        SETFILTER("VAT Prod. Posting Group",'<>%1','');
+        SETRANGE("Tax Category",TaxCategory);
+        IF FINDSET THEN REPEAT
+          GenProductPostingGroup.SETRANGE("Def. VAT Prod. Posting Group","VAT Prod. Posting Group");
+          IF GenProductPostingGroup.FINDFIRST THEN BEGIN
+            Item."Gen. Prod. Posting Group" := GenProductPostingGroup.Code;
+            Item."VAT Prod. Posting Group" := "VAT Prod. Posting Group";
+            Item."VAT Bus. Posting Gr. (Price)" := "VAT Bus. Posting Group";
+            EXIT;
+          END;
+        UNTIL NEXT = 0;
+      END;
+      ERROR(TaxCategoryNotFoundErr,TaxCategory);
+    END;
+
+    LOCAL PROCEDURE GetTaxCategoryFromPostingSetup@10036001(Item@10008852 : Record 27;VAR TaxCategory@10008853 : Code[10]);
+    VAR
+      VATPostingSetup@10008851 : Record 325;
+      GenProductPostingGroup@10008850 : Record 251;
+    BEGIN
+      WITH VATPostingSetup DO BEGIN
+        IF GET(GetDefVATBusPostingGrpCode,Item."VAT Prod. Posting Group") AND ("Tax Category" <> '') THEN BEGIN
+          TaxCategory := "Tax Category";
+          EXIT;
+        END;
+      END;
+      ERROR(VATPostingSetupNotFoundErr,GetDefVATBusPostingGrpCode,Item."VAT Prod. Posting Group");
+    END;
+
+    LOCAL PROCEDURE SetInternationalUoMToUoMCode@10008864(InternationalUoM@10008851 : Code[10];VAR Item@10008850 : Record 27);
+    VAR
+      UnitofMeasure@10008852 : Record 204;
+    BEGIN
+      WITH UnitofMeasure DO BEGIN
+        SETRANGE("International Standard Code",InternationalUoM);
+        IF FINDFIRST THEN BEGIN
+          Item.VALIDATE("Base Unit of Measure",Code);
+          EXIT;
+        END;
+      END;
+      ERROR(InternationalUoMNotFoundErr,InternationalUoM);
+    END;
+
+    LOCAL PROCEDURE GetInternationalUoMFromItemUoM@10036002(Item@10008850 : Record 27;VAR InternationalUoM@10008851 : Code[10]);
+    VAR
+      UnitofMeasure@10008852 : Record 204;
+    BEGIN
+      WITH UnitofMeasure DO BEGIN
+        IF GET(Item."Base Unit of Measure") AND ("International Standard Code" <> '') THEN BEGIN
+          InternationalUoM := "International Standard Code";
+          EXIT;
+
+        END;
+      END;
+      ERROR(ItemUnitOfMeasureNotFoundErr,Item."Base Unit of Measure");
+    END;
+
+    LOCAL PROCEDURE GetDefVATBusPostingGrpCode@10036000() : Code[10];
+    VAR
+      Setup@10008850 : Record 10008850;
+    BEGIN
+      Setup.GET;
+      Setup.TESTFIELD("Def. VAT Bus. Pst. Gr. (Price)");
+      EXIT(Setup."Def. VAT Bus. Pst. Gr. (Price)");
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

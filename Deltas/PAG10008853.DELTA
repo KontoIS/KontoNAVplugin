@@ -1,0 +1,193 @@
+OBJECT Page 10008853 Konto Item List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Item List;
+               ISL=Konto vîrulisti];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10008851;
+    PageType=List;
+    SourceTableTemporary=Yes;
+    OnOpenPage=BEGIN
+                 SETCURRENTKEY("Item Number");
+               END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           IsLinked := Status IN [Status::"Updated in Konto",Status::"Updated in NAV",Status::Synchronized]
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 10008859;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 10008860;1   ;Action    ;
+                      Name=Details;
+                      CaptionML=[ENU=Details;
+                                 ISL=Sundurli–un];
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=ItemWorksheet;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoItemDetails@10008850 : Page 10008854;
+                               BEGIN
+                                 KontoItemDetails.Set(Rec);
+                                 KontoItemDetails.RUN;
+                               END;
+                                }
+      { 10008862;1   ;Action    ;
+                      Name=ItemCard;
+                      CaptionML=[ENU=Item Card;
+                                 ISL=Vîruspjald];
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=Item;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 PageMgt@10008851 : Codeunit 700;
+                               BEGIN
+                                 PageMgt.PageRun("Related Record ID");
+                               END;
+                                }
+      { 10008863;1   ;Action    ;
+                      Name=CreateNAVItem;
+                      ShortCutKey=Ctrl+N;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Create NAV Item;
+                                 ISL=Stofna NAV vîru];
+                      Promoted=Yes;
+                      Enabled=NOT IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=NewItem;
+                      PromotedCategory=New;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10008850 : Codeunit 10008852;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.CreateNAVItemFromKonto(Rec);
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10036000;1   ;Action    ;
+                      Name=CreateKontoItem;
+                      ShortCutKey=Ctrl+N;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Create Konto Item;
+                                 ISL=Stofna Konto vîru];
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=NewItem;
+                      PromotedCategory=New;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10008850 : Codeunit 10008852;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.CreateKontoItemFromNAV(Rec);
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10008864;1   ;Action    ;
+                      Name=LinkExistingItem;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Link Existing Item;
+                                 ISL=Tengja fyrirliggjandi vîru];
+                      Promoted=Yes;
+                      Enabled=NOT IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=SelectItemSubstitution;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10008850 : Codeunit 10008852;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.LinkExistingNAVItemFromKonto(Rec);
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10036002;1   ;Action    ;
+                      Name=BreakExistingLink;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Break Existing Link;
+                                 ISL=Brj¢ta tengingu];
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=RemoveLine;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoIntegrationRecord@10008850 : Record 10008851;
+                               BEGIN
+                                 IF KontoIntegrationRecord.GET(ID) THEN
+                                   KontoIntegrationRecord.DELETE;
+                                 Status := Status::"New in Konto";
+                                 MODIFY;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 10008850;0;Container;
+                ContainerType=ContentArea }
+
+    { 10008851;1;Group    ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 10008861;2;Field    ;
+                SourceExpr=Status }
+
+    { 10008852;2;Field    ;
+                SourceExpr="Item Number" }
+
+    { 10008853;2;Field    ;
+                SourceExpr="Item Description" }
+
+    { 10008854;2;Field    ;
+                SourceExpr="Item Unit of Measure" }
+
+    { 10008855;2;Field    ;
+                SourceExpr="Item Tax Category" }
+
+    { 10008856;2;Field    ;
+                SourceExpr="Item Unit Price" }
+
+    { 10008857;2;Field    ;
+                SourceExpr="Item Category" }
+
+    { 10036001;2;Field    ;
+                SourceExpr="Item Active" }
+
+    { 10008858;2;Field    ;
+                SourceExpr="Record Updated" }
+
+  }
+  CODE
+  {
+    VAR
+      IsLinked@10008850 : Boolean;
+
+    PROCEDURE Set@1(VAR TempItem@10008850 : TEMPORARY Record 10008851);
+    BEGIN
+      COPY(TempItem,TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

@@ -1,0 +1,193 @@
+OBJECT Page 10008855 Konto Invoice List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=30.05.17;
+    Time=16:37:25;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Invoice List;
+               ISL=Konto reikningalisti];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10008851;
+    PageType=List;
+    SourceTableTemporary=Yes;
+    OnOpenPage=BEGIN
+                 SETCURRENTKEY("Invoice Number");
+               END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           IsLinked := Status IN [Status::"Updated in Konto",Status::"Updated in NAV",Status::Synchronized]
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 10008863;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 10008862;1   ;Action    ;
+                      Name=Details;
+                      CaptionML=[ENU=Details;
+                                 ISL=Sundurli–un];
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=Invoice;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoIntegrationRecord@10008851 : TEMPORARY Record 10008851;
+                                 KontoInvoiceDetails@10008850 : Page 10008856;
+                               BEGIN
+                                 KontoIntegrationRecord.COPY(Rec,TRUE);
+                                 KontoIntegrationRecord.SETRECFILTER;
+                                 KontoInvoiceDetails.Set(KontoIntegrationRecord);
+                                 KontoInvoiceDetails.RUN;
+                               END;
+                                }
+      { 10008864;1   ;Action    ;
+                      Name=CreateInvoice;
+                      ShortCutKey=F9;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Create Invoice;
+                                 ISL=Stofna reikning];
+                      Promoted=Yes;
+                      Enabled=NOT IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=NewInvoice;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoIntegrationRecord@10008851 : Record 10008851;
+                                 SalesInvoiceMgt@10008850 : Codeunit 10008853;
+                                 RecRef@10000200 : RecordRef;
+                               BEGIN
+                                 SalesInvoiceMgt.CreateAndPostInvoice(Rec);
+                                 IF KontoIntegrationRecord.GET(ID) THEN BEGIN
+                                   Posted := KontoIntegrationRecord.Posted;
+                                   "Related Record ID" := KontoIntegrationRecord."Related Record ID";
+                                   MODIFY;
+                                   IF Posted THEN BEGIN
+                                     RecRef.GET("Related Record ID");
+                                     MESSAGE('%1 %2',RecRef.CAPTION,PostedMsg);
+                                   END;
+                                 END;
+                               END;
+                                }
+      { 10036003;1   ;Action    ;
+                      Name=SkipInvoice;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Skip Invoice;
+                                 ISL=Sleppa reikningi];
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=PrepaymentInvoice;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=BEGIN
+                                 TESTFIELD(Posted,FALSE);
+                                 Skipped := TRUE;
+                                 Status := Status::"Updated in NAV";
+                                 MODIFY;
+                               END;
+                                }
+      { 10036001;1   ;Action    ;
+                      Name=ShowInvoice;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Show Invoice;
+                                 ISL=SÏna reikning];
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=CoupledInvoice;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 PageMgt@10008850 : Codeunit 700;
+                               BEGIN
+                                 PageMgt.PageRun("Related Record ID");
+                               END;
+                                }
+      { 10036002;1   ;Action    ;
+                      Name=UpdateKontoStatus;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Update Konto Status;
+                                 ISL=Uppfëra stî–u ° Konto];
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=ChangeStatus;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoServiceMgt@10008850 : Codeunit 10008850;
+                               BEGIN
+                                 IF KontoServiceMgt.UpdateInvoice(Rec) THEN
+                                   DELETE;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 10008850;0;Container;
+                ContainerType=ContentArea }
+
+    { 10008851;1;Group    ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 10008861;2;Field    ;
+                SourceExpr=Status }
+
+    { 10036000;2;Field    ;
+                SourceExpr=Posted }
+
+    { 10008852;2;Field    ;
+                SourceExpr="Invoice Number" }
+
+    { 10008853;2;Field    ;
+                SourceExpr="Invoice Description" }
+
+    { 10008854;2;Field    ;
+                SourceExpr="Invoice Currency Code" }
+
+    { 10008855;2;Field    ;
+                SourceExpr="Invoice Amount" }
+
+    { 10008856;2;Field    ;
+                SourceExpr="Invoice Issue Date" }
+
+    { 10008857;2;Field    ;
+                SourceExpr="Invoice Due Date" }
+
+    { 10008859;2;Field    ;
+                SourceExpr="Invoice Settlement Date" }
+
+    { 10008860;2;Field    ;
+                SourceExpr="Invoice Booking" }
+
+    { 10008858;2;Field    ;
+                SourceExpr="Record Updated" }
+
+  }
+  CODE
+  {
+    VAR
+      IsLinked@10008850 : Boolean;
+      PostedMsg@10008851 : TextConst 'ENU=" posted.";ISL=" b¢ka–ur."';
+
+    PROCEDURE Set@1(VAR TempInvoice@10008850 : TEMPORARY Record 10008851);
+    BEGIN
+      COPY(TempInvoice,TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

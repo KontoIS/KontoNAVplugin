@@ -1,0 +1,512 @@
+OBJECT Codeunit 10008851 Konto Service Data Mgt.
+{
+  OBJECT-PROPERTIES
+  {
+    Date=18.07.17;
+    Time=21:48:43;
+    Version List=KONTO9.00;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      XMLDOMMgt@10008850 : Codeunit 6224;
+
+    PROCEDURE ShowMessageAsError@10008861(ResponseString@10008850 : Text;RequestString@10008852 : Text);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      ERROR(XMLDOMMgt.FindNodeText(XmlDocument.DocumentElement,'message') + '\\' + RequestString);
+    END;
+
+    PROCEDURE UpdateOrganizationInfo@16(VAR KontoServiceSetup@1001 : Record 10008850;ResponseString@10008850 : Text);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      KontoServiceSetup."Account Name" := XMLDOMMgt.FindNodeText(XmlDocument.DocumentElement,'name');
+      KontoServiceSetup."Account Registration ID" := XMLDOMMgt.FindNodeText(XmlDocument.DocumentElement,'registration_no');
+      KontoServiceSetup."Account VAT Registration No." := XMLDOMMgt.FindNodeText(XmlDocument.DocumentElement,'vat_no');
+      KontoServiceSetup.MODIFY;
+    END;
+
+    PROCEDURE ReadSingleCustomer@10008852(ResponseString@10008850 : Text;VAR TempCustomer@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      ReadCustomer(ResultXMLNode,TempCustomer);
+    END;
+
+    PROCEDURE ReadCustomerList@10008850(ResponseString@10008850 : Text;VAR TempCustomer@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNodeList@10008855 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNodeList";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNodes(XmlDocument.DocumentElement,'result',ResultXMLNodeList);
+      FOREACH ResultXMLNode IN ResultXMLNodeList DO
+        ReadCustomer(ResultXMLNode,TempCustomer);
+    END;
+
+    LOCAL PROCEDURE ReadCustomer@10008859(ResultXMLNode@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";VAR TempCustomer@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoDataSynchronizeMgt@10008853 : Codeunit 10008852;
+    BEGIN
+      WITH TempCustomer DO BEGIN
+        INIT;
+        ID := XMLDOMMgt.FindNodeText(ResultXMLNode,'guid');
+        "Table ID" := DATABASE::Customer;
+        "Customer Name" := XMLDOMMgt.FindNodeText(ResultXMLNode,'name');
+        "Customer Address":= XMLDOMMgt.FindNodeText(ResultXMLNode,'address');
+        "Customer Post Code" := XMLDOMMgt.FindNodeText(ResultXMLNode,'zip');
+        "Customer City" := XMLDOMMgt.FindNodeText(ResultXMLNode,'city');
+        "Customer E-Mail Address" := XMLDOMMgt.FindNodeText(ResultXMLNode,'email');
+        "Customer Language Code" := XMLDOMMgt.FindNodeText(ResultXMLNode,'lang');
+        "Customer Currency Code" := XMLDOMMgt.FindNodeText(ResultXMLNode,'currency');
+        "Customer Trading Partner ID" := XMLDOMMgt.FindNodeText(ResultXMLNode,'trading_partner_id');
+        "Customer Registration No." := XMLDOMMgt.FindNodeText(ResultXMLNode,'registration_no');
+        "Customer Payment Terms" := XMLDOMMgt.FindNodeText(ResultXMLNode,'term');
+        CustomerPhotoFromBase64String(XMLDOMMgt.FindNodeText(ResultXMLNode,'photo'));
+        "Customer Due Date Rule" := ToInteger(XMLDOMMgt.FindNodeText(ResultXMLNode,'due_date'));
+        "Customer Settlement Date Rule" := ToInteger(XMLDOMMgt.FindNodeText(ResultXMLNode,'settlement_date'));
+        "Customer Tax Exempt" := ToBoolean(XMLDOMMgt.FindNodeText(ResultXMLNode,'tax_exempt'));
+        "Record Updated" := ToDateTime(XMLDOMMgt.FindNodeText(ResultXMLNode,'updated_timestamp'));
+        "Customer Claim Subscription" := ToBoolean(XMLDOMMgt.FindNodeText(ResultXMLNode,'is_claim'));
+        "Customer Discount Subscription" := ToBoolean(XMLDOMMgt.FindNodeText(ResultXMLNode,'is_discount'));
+        KontoDataSynchronizeMgt.LinkToIntegrationRecord(TempCustomer);
+      END;
+    END;
+
+    PROCEDURE ReadNoOfCustomers@10008853(ResponseString@10008850 : Text;VAR NoOfCustomers@10008853 : Integer);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      EVALUATE(NoOfCustomers,ResultXMLNode.InnerText,9);
+    END;
+
+    PROCEDURE ReadSingleItem@10036001(ResponseString@10008850 : Text;VAR TempItem@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      ReadItem(ResultXMLNode,TempItem);
+    END;
+
+    PROCEDURE ReadItemList@10008862(ResponseString@10008850 : Text;VAR TempItem@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNodeList@10008855 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNodeList";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNodes(XmlDocument.DocumentElement,'result',ResultXMLNodeList);
+      FOREACH ResultXMLNode IN ResultXMLNodeList DO
+        ReadItem(ResultXMLNode,TempItem);
+    END;
+
+    LOCAL PROCEDURE ReadItem@10008863(ResultXMLNode@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";VAR TempItem@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoDataSynchronizeMgt@10008853 : Codeunit 10008852;
+    BEGIN
+      WITH TempItem DO BEGIN
+        INIT;
+        ID := XMLDOMMgt.FindNodeText(ResultXMLNode,'guid');
+        "Table ID" := DATABASE::Item;
+        "Item Number" := ToInteger(XMLDOMMgt.FindNodeText(ResultXMLNode,'item_number'));
+        "Item Description" := XMLDOMMgt.FindNodeText(ResultXMLNode,'description');
+        "Item Unit of Measure" := XMLDOMMgt.FindNodeText(ResultXMLNode,'uom');
+        "Item Tax Category" := XMLDOMMgt.FindNodeText(ResultXMLNode,'tax');
+        "Item Unit Price" := ToDecimal(XMLDOMMgt.FindNodeText(ResultXMLNode,'unit_price'));
+        "Item Category" := XMLDOMMgt.FindNodeText(ResultXMLNode,'category');
+        "Item Active" := ToBoolean(XMLDOMMgt.FindNodeText(ResultXMLNode,'active'));
+        "Record Updated" := ToDateTime(XMLDOMMgt.FindNodeText(ResultXMLNode,'updated_timestamp'));
+        KontoDataSynchronizeMgt.LinkToIntegrationRecord(TempItem);
+      END;
+    END;
+
+    PROCEDURE ReadNoOfItems@10036002(ResponseString@10008850 : Text;VAR NoOfItems@10008853 : Integer);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      EVALUATE(NoOfItems,ResultXMLNode.InnerText,9);
+    END;
+
+    PROCEDURE ReadInvoiceList@10036004(ResponseString@10008850 : Text;VAR TempInvoice@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNodeList@10008855 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNodeList";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNodes(XmlDocument.DocumentElement,'result',ResultXMLNodeList);
+      FOREACH ResultXMLNode IN ResultXMLNodeList DO
+        ReadInvoice(ResultXMLNode,TempInvoice);
+    END;
+
+    LOCAL PROCEDURE ReadInvoice@10036003(ResultXMLNode@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";VAR TempInvoice@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoDataSynchronizeMgt@10008853 : Codeunit 10008852;
+      FoundXMLNodeList@10008855 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNodeList";
+      FoundXMLNode@10008854 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+      OuterXml@10008856 : Text;
+    BEGIN
+      WITH TempInvoice DO BEGIN
+        INIT;
+        ID := XMLDOMMgt.FindNodeText(ResultXMLNode,'guid');
+        "Table ID" := DATABASE::"Sales Header";
+        "Invoice Number" := XMLDOMMgt.FindNodeText(ResultXMLNode,'number');
+        "Invoice Amount" := ToDecimal(XMLDOMMgt.FindNodeText(ResultXMLNode,'amount'));
+        "Invoice Currency Code" := XMLDOMMgt.FindNodeText(ResultXMLNode,'currency');
+        "Invoice Status" := XMLDOMMgt.FindNodeText(ResultXMLNode,'status');
+        "Invoice Issue Date" := ToDate(XMLDOMMgt.FindNodeText(ResultXMLNode,'issue_date'));
+        "Invoice Due Date" := ToDate(XMLDOMMgt.FindNodeText(ResultXMLNode,'due_date'));
+        "Invoice Settlement Date" := ToDate(XMLDOMMgt.FindNodeText(ResultXMLNode,'settlement_date'));
+        "Invoice Description" := XMLDOMMgt.FindNodeText(ResultXMLNode,'description');
+        "Invoice Booking" := XMLDOMMgt.FindNodeText(ResultXMLNode,'booking');
+        "Invoice Cost Provide" := XMLDOMMgt.FindNodeText(ResultXMLNode,'cost_provide');
+        "Invoice Delivery Date" := ToDate(XMLDOMMgt.FindNodeText(ResultXMLNode,'delivery_date'));
+        "Invoice Terms" := XMLDOMMgt.FindNodeText(ResultXMLNode,'terms');
+        "Invoice Type" := XMLDOMMgt.FindNodeText(ResultXMLNode,'type');
+        "Invoice Reference ID" := XMLDOMMgt.FindNodeText(ResultXMLNode,'refer_guid');
+        "Record Updated" := ToDateTime(XMLDOMMgt.FindNodeText(ResultXMLNode,'updated_timestamp'));
+        OuterXml := '<invoice>';
+        IF XMLDOMMgt.FindNodes(ResultXMLNode,'items',FoundXMLNodeList) THEN
+          FOREACH FoundXMLNode IN FoundXMLNodeList DO
+            OuterXml += FoundXMLNode.OuterXml;
+        OuterXml += '</invoice>';
+        WriteInvoiceItemsAsText(OuterXml);
+        OuterXml := '<invoice>';
+        IF XMLDOMMgt.FindNodes(ResultXMLNode,'customer',FoundXMLNodeList) THEN
+          FOREACH FoundXMLNode IN FoundXMLNodeList DO
+            OuterXml += FoundXMLNode.OuterXml;
+        OuterXml += '</invoice>';
+        WriteInvoiceCustomerAsText(OuterXml);
+        KontoDataSynchronizeMgt.LinkToIntegrationRecord(TempInvoice);
+      END;
+    END;
+
+    PROCEDURE ReadInvoiceItems@10036007(ResponseString@10008850 : Text;VAR TempInvoiceItem@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNodeList@10008855 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNodeList";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNodes(XmlDocument.DocumentElement,'items',ResultXMLNodeList);
+      FOREACH ResultXMLNode IN ResultXMLNodeList DO
+        ReadInvoiceItem(ResultXMLNode,TempInvoiceItem);
+    END;
+
+    LOCAL PROCEDURE ReadInvoiceItem@10036006(ResultXMLNode@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";VAR TempInvoiceItem@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoDataSynchronizeMgt@10008852 : Codeunit 10008852;
+    BEGIN
+      WITH TempInvoiceItem DO BEGIN
+        INIT;
+        ID := XMLDOMMgt.FindNodeText(ResultXMLNode,'guid');
+        "Table ID" := DATABASE::Item;
+        "Item Number" := ToInteger(XMLDOMMgt.FindNodeText(ResultXMLNode,'item_number'));
+        "Item Description" := XMLDOMMgt.FindNodeText(ResultXMLNode,'description');
+        "Item Unit of Measure" := XMLDOMMgt.FindNodeText(ResultXMLNode,'uom');
+        "Item Tax Category" := XMLDOMMgt.FindNodeText(ResultXMLNode,'tax');
+        "Item Quantity" := ToInteger(XMLDOMMgt.FindNodeText(ResultXMLNode,'qty'));
+        "Item Unit Price" := ToDecimal(XMLDOMMgt.FindNodeText(ResultXMLNode,'unit_price'));
+        "Item Discount" := ToDecimal(XMLDOMMgt.FindNodeText(ResultXMLNode,'discount'));
+        "Item Discount Type" := ToInteger(XMLDOMMgt.FindNodeText(ResultXMLNode,'discount_type'));
+        "Item VAT %" := ToDecimal(XMLDOMMgt.FindNodeText(ResultXMLNode,'vat'));
+        "Item VAT Amount":= ToDecimal(XMLDOMMgt.FindNodeText(ResultXMLNode,'vat_amount'));
+
+        CASE "Item Discount Type" OF
+          "Item Discount Type"::Percentage:
+            BEGIN
+              "Item Amount" := ROUND("Item Quantity" * "Item Unit Price" * (100 - "Item Discount") / 100,1);
+              "Item VAT Amount" := ROUND("Item Amount" * "Item VAT %" / 100,1);
+              "Item Amount Incl. VAT" :=  "Item Amount" + "Item VAT Amount";
+            END;
+          "Item Discount Type"::Price:
+            BEGIN
+              "Item Amount" := "Item Quantity" * "Item Unit Price" - "Item Discount";
+              "Item Amount Incl. VAT" := "Item Amount" + "Item VAT Amount";
+            END;
+        END;
+        KontoDataSynchronizeMgt.LinkToIntegrationRecord(TempInvoiceItem);
+      END;
+    END;
+
+    PROCEDURE ReadInvoiceCustomers@10036010(ResponseString@10008850 : Text;VAR TempInvoiceCustomer@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNodeList@10008855 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNodeList";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNodes(XmlDocument.DocumentElement,'customer',ResultXMLNodeList);
+      FOREACH ResultXMLNode IN ResultXMLNodeList DO
+        ReadInvoiceCustomer(ResultXMLNode,TempInvoiceCustomer);
+    END;
+
+    LOCAL PROCEDURE ReadInvoiceCustomer@10036009(ResultXMLNode@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";VAR TempInvoiceCustomer@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoDataSynchronizeMgt@10008852 : Codeunit 10008852;
+    BEGIN
+      WITH TempInvoiceCustomer DO BEGIN
+        INIT;
+        ID := XMLDOMMgt.FindNodeText(ResultXMLNode,'guid');
+        "Table ID" := DATABASE::Customer;
+        "Customer Name" := XMLDOMMgt.FindNodeText(ResultXMLNode,'name');
+        "Customer Address" := XMLDOMMgt.FindNodeText(ResultXMLNode,'address');
+        "Customer Post Code" := XMLDOMMgt.FindNodeText(ResultXMLNode,'zip');
+        "Customer City" := XMLDOMMgt.FindNodeText(ResultXMLNode,'city');
+        "Customer Registration No." := XMLDOMMgt.FindNodeText(ResultXMLNode,'registration_no');
+        "Customer E-Mail Address" := XMLDOMMgt.FindNodeText(ResultXMLNode,'email');
+        KontoDataSynchronizeMgt.LinkToIntegrationRecord(TempInvoiceCustomer);
+      END;
+    END;
+
+    PROCEDURE ReadSingleExpense@10036013(ResponseString@10008850 : Text;VAR TempExpense@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      ReadExpense(ResultXMLNode,TempExpense);
+    END;
+
+    PROCEDURE ReadExpenseList@10036012(ResponseString@10008850 : Text;VAR TempExpense@10008853 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNodeList@10008855 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNodeList";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNodes(XmlDocument.DocumentElement,'result',ResultXMLNodeList);
+      FOREACH ResultXMLNode IN ResultXMLNodeList DO
+        ReadExpense(ResultXMLNode,TempExpense);
+    END;
+
+    LOCAL PROCEDURE ReadExpense@10036011(ResultXMLNode@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";VAR TempExpense@10008850 : TEMPORARY Record 10008851);
+    VAR
+      KontoDataSynchronizeMgt@10008853 : Codeunit 10008852;
+    BEGIN
+      WITH TempExpense DO BEGIN
+        INIT;
+        ID := XMLDOMMgt.FindNodeText(ResultXMLNode,'guid');
+        "Table ID" := DATABASE::"Incoming Document";
+        "Expense Description" := XMLDOMMgt.FindNodeText(ResultXMLNode,'description');
+        "Expense Vendor Reg. No." := XMLDOMMgt.FindNodeText(ResultXMLNode,'kennitala');
+        "Expense VAT Registration No." := XMLDOMMgt.FindNodeText(ResultXMLNode,'vat_no');
+        "Expense Amount" := ToDecimal(XMLDOMMgt.FindNodeText(ResultXMLNode,'amount'));
+        ExpenseAttachmentFromBase64String(XMLDOMMgt.FindNodeText(ResultXMLNode,'file'));
+        ExpenseXmlFromBase64String(XMLDOMMgt.FindNodeText(ResultXMLNode,'xml'));
+        KontoDataSynchronizeMgt.LinkToIntegrationRecord(TempExpense);
+      END;
+    END;
+
+    PROCEDURE ReadNoOfExpense@10036008(ResponseString@10008850 : Text;VAR NoOfExpenses@10008853 : Integer);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      EVALUATE(NoOfExpenses,ResultXMLNode.InnerText,9);
+    END;
+
+    PROCEDURE GetCreateCustomerJson@10008851(VAR TempCustomer@10008854 : TEMPORARY Record 10008851) Json : Text;
+    VAR
+      XmlDocument@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      CreatedXMLNode@10008853 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XMLDOMMgt.AddRootElement(XmlDocument,GetDocumentElementName,CreatedXMLNode);
+      WITH TempCustomer DO BEGIN
+        XMLDOMMgt.AddNode(CreatedXMLNode,'registration_no',"Customer Registration No.");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'name',"Customer Name");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'address',"Customer Address");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'zip',"Customer Post Code");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'city',"Customer City");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'email',"Customer E-Mail Address");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'term',"Customer Payment Terms");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'photo',CustomerPhotoToBase64String);
+        XMLDOMMgt.AddNode(CreatedXMLNode,'due_date',FORMAT("Customer Due Date Rule",0,9));
+        XMLDOMMgt.AddNode(CreatedXMLNode,'settlement_date',FORMAT("Customer Settlement Date Rule",0,9));
+        XMLDOMMgt.AddNode(CreatedXMLNode,'trading_partner_id',"Customer Trading Partner ID");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'lang',"Customer Language Code");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'currency',"Customer Currency Code");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'tax_exempt',FORMAT("Customer Tax Exempt",0,9));
+      END;
+      Json := XmlToJson(XmlDocument.OuterXml);
+    END;
+
+    PROCEDURE ReadCreateCustomerResponse@10008860(ResponseString@10008850 : Text;VAR TempCustomer@10008854 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      TempCustomer.ID := ResultXMLNode.InnerText;
+    END;
+
+    PROCEDURE GetCreateItemJson@10036000(VAR TempItem@10008854 : TEMPORARY Record 10008851) Json : Text;
+    VAR
+      XmlDocument@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      CreatedXMLNode@10008853 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XMLDOMMgt.AddRootElement(XmlDocument,GetDocumentElementName,CreatedXMLNode);
+      WITH TempItem DO BEGIN
+        XMLDOMMgt.AddNode(CreatedXMLNode,'description',"Item Description");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'uom',"Item Unit of Measure");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'tax',"Item Tax Category");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'unit_price',FORMAT("Item Unit Price",0,9));
+        XMLDOMMgt.AddNode(CreatedXMLNode,'category',"Item Category");
+        XMLDOMMgt.AddNode(CreatedXMLNode,'active',FORMAT("Item Active",0,9));
+      END;
+      Json := XmlToJson(XmlDocument.OuterXml);
+    END;
+
+    PROCEDURE ReadCreateItemResponse@10008864(ResponseString@10008850 : Text;VAR TempItem@10008854 : TEMPORARY Record 10008851);
+    VAR
+      XmlDocument@10008851 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      ResultXMLNode@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(ResponseString);
+      XMLDOMMgt.FindNode(XmlDocument.DocumentElement,'result',ResultXMLNode);
+      TempItem.ID := ResultXMLNode.InnerText;
+    END;
+
+    PROCEDURE GetUpdateInvoiceJson@10036014(VAR TempInvoice@10008854 : TEMPORARY Record 10008851) Json : Text;
+    VAR
+      XmlDocument@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      CreatedXMLNode@10008853 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+      RecRef@10008850 : RecordRef;
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XMLDOMMgt.AddRootElement(XmlDocument,GetDocumentElementName,CreatedXMLNode);
+      WITH TempInvoice DO BEGIN
+        IF Posted THEN
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_status',FIELDNAME(Posted))
+        ELSE IF Skipped THEN
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_status',FIELDNAME(Skipped))
+        ELSE
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_status','');
+
+        IF RecRef.GET("Related Record ID") THEN
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_message',FORMAT("Related Record ID"))
+        ELSE
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_message','');
+      END;
+      Json := XmlToJson(XmlDocument.OuterXml);
+    END;
+
+    PROCEDURE GetUpdateExpenseJson@10036017(VAR TempExpense@10008854 : TEMPORARY Record 10008851) Json : Text;
+    VAR
+      XmlDocument@10008852 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+      CreatedXMLNode@10008853 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlNode";
+      RecRef@10008850 : RecordRef;
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XMLDOMMgt.AddRootElement(XmlDocument,GetDocumentElementName,CreatedXMLNode);
+      WITH TempExpense DO BEGIN
+        IF Posted THEN
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_status',FIELDNAME(Posted))
+        ELSE IF Skipped THEN
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_status',FIELDNAME(Skipped))
+        ELSE
+          XMLDOMMgt.AddNode(CreatedXMLNode,'accounting_status','');
+      END;
+      Json := XmlToJson(XmlDocument.OuterXml);
+    END;
+
+    PROCEDURE XmlToJson@94(Xml@10008850 : Text) Json : Text;
+    VAR
+      JsonConvert@10017292 : DotNet "'Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed'.Newtonsoft.Json.JsonConvert";
+      JsonFormatting@10017296 : DotNet "'Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed'.Newtonsoft.Json.Formatting";
+      XmlDocument@10017291 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+    BEGIN
+      XmlDocument := XmlDocument.XmlDocument;
+      XmlDocument.LoadXml(Xml);
+      Json := JsonConvert.SerializeXmlNode(XmlDocument.DocumentElement,JsonFormatting.Indented,TRUE);
+    END;
+
+    PROCEDURE JsonToXml@95(Json@10008850 : Text) Xml : Text;
+    VAR
+      JsonConvert@10017293 : DotNet "'Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed'.Newtonsoft.Json.JsonConvert";
+      JsonFormatting@10017292 : DotNet "'Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed'.Newtonsoft.Json.Formatting";
+      XmlDocument@10017291 : DotNet "'System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Xml.XmlDocument";
+    BEGIN
+      XmlDocument := JsonConvert.DeserializeXmlNode(Json,GetDocumentElementName);
+      Xml := XmlDocument.OuterXml;
+    END;
+
+    LOCAL PROCEDURE GetDocumentElementName@10008854() : Text;
+    BEGIN
+      EXIT('Konto');
+    END;
+
+    LOCAL PROCEDURE ToDecimal@10008855(InnerText@10008850 : Text) Result : Decimal;
+    BEGIN
+      IF NOT EVALUATE(Result,InnerText,9) THEN EXIT(0);
+    END;
+
+    LOCAL PROCEDURE ToInteger@10008856(InnerText@10008850 : Text) Result : Decimal;
+    BEGIN
+      IF NOT EVALUATE(Result,InnerText,9) THEN EXIT(0);
+    END;
+
+    LOCAL PROCEDURE ToBoolean@10008857(InnerText@10008850 : Text) Result : Boolean;
+    BEGIN
+      IF NOT EVALUATE(Result,InnerText,9) THEN EXIT(FALSE);
+    END;
+
+    LOCAL PROCEDURE ToDate@10008858(InnerText@10008850 : Text) Result : Date;
+    BEGIN
+      IF NOT EVALUATE(Result,COPYSTR(InnerText,1,10),9) THEN EXIT(0D);
+    END;
+
+    LOCAL PROCEDURE ToDateTime@10036005(InnerText@10008850 : Text) Result : DateTime;
+    BEGIN
+      IF NOT EVALUATE(Result,InnerText,9) THEN EXIT(0DT);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+
