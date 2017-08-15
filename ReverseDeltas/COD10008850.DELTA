@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Service Mgt."(Codeunit 10008850)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Service Mgt."(Codeunit 10008850);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

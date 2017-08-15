@@ -1,4 +1,4 @@
-OBJECT Codeunit 10008854 Konto Job Queue Mgt.
+OBJECT Modification "Konto Item List"(Page 10008853)
 {
   OBJECT-PROPERTIES
   {
@@ -8,9 +8,8 @@ OBJECT Codeunit 10008854 Konto Job Queue Mgt.
   }
   PROPERTIES
   {
-    OnRun=BEGIN
-          END;
-
+    Target="Konto Item List"(Page 10008853);
+    ChangeType=Deletion;
   }
   CODE
   {

@@ -2,9 +2,9 @@ OBJECT Codeunit 10008853 Konto Sales Invoice Mgt.
 {
   OBJECT-PROPERTIES
   {
-    Date=30.05.17;
-    Time=16:20:29;
-    Version List=KONTO9.00;
+    Date=;
+    Time=;
+    Version List=;
   }
   PROPERTIES
   {
@@ -205,6 +205,8 @@ OBJECT Codeunit 10008853 Konto Sales Invoice Mgt.
     END;
 
     LOCAL PROCEDURE AddInvoiceDetails@10008859(VAR SalesHeader@10008851 : Record 36;TempInvoice@10008850 : TEMPORARY Record 10008851);
+    VAR
+      RecordVariant@10008852 : Variant;
     BEGIN
       WITH TempInvoice DO BEGIN
         SalesHeader.VALIDATE("Posting Date","Invoice Issue Date");
@@ -214,8 +216,11 @@ OBJECT Codeunit 10008853 Konto Sales Invoice Mgt.
         IF "Invoice Currency Code" <> GLSetup."LCY Code" THEN
           SalesHeader.VALIDATE("Currency Code","Invoice Currency Code");
         SalesHeader."Posting Description" := COPYSTR("Invoice Description",1,MAXSTRLEN(SalesHeader."Posting Description"));
-        IF "Invoice Settlement Date" <> 0D THEN
-          SalesHeader.VALIDATE("Settlement Date","Invoice Settlement Date");
+        IF "Invoice Settlement Date" <> 0D THEN BEGIN
+          RecordVariant := SalesHeader;
+          ValidateOptionalField(RecordVariant,'Settlement Date',"Invoice Settlement Date");
+          SalesHeader := RecordVariant;
+        END;
       END;
     END;
 
@@ -367,6 +372,18 @@ OBJECT Codeunit 10008853 Konto Sales Invoice Mgt.
           MODIFYALL("Related Record ID",SalesInvoiceHeader.RECORDID);
         END;
       END;
+    END;
+
+    LOCAL PROCEDURE ValidateOptionalField@10008865(VAR RecordVariant@10008850 : Variant;FieldName@10008851 : Text;FieldValue@10008852 : Variant);
+    VAR
+      DataTypeMgt@10008855 : Codeunit 701;
+      RecRef@10008854 : RecordRef;
+      FldRef@10008853 : FieldRef;
+    BEGIN
+      IF NOT DataTypeMgt.GetRecordRef(RecordVariant,RecRef) THEN EXIT;
+      IF NOT DataTypeMgt.FindFieldByName(RecRef,FldRef,FieldName) THEN EXIT;
+      FldRef.VALIDATE(FieldValue);
+      RecRef.SETTABLE(RecordVariant);
     END;
 
     BEGIN

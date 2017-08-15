@@ -2,9 +2,9 @@ OBJECT Codeunit 10008850 Konto Service Mgt.
 {
   OBJECT-PROPERTIES
   {
-    Date=13.05.17;
-    Time=14:29:11;
-    Version List=KONTO9.00;
+    Date=;
+    Time=;
+    Version List=;
   }
   PROPERTIES
   {

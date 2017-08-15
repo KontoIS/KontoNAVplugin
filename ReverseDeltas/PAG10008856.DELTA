@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Invoice Details"(Page 10008856)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Invoice Details"(Page 10008856);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

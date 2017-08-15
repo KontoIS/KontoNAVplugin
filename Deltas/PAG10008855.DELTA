@@ -2,9 +2,9 @@ OBJECT Page 10008855 Konto Invoice List
 {
   OBJECT-PROPERTIES
   {
-    Date=30.05.17;
-    Time=16:37:25;
-    Version List=KONTO10.00;
+    Date=;
+    Time=;
+    Version List=;
   }
   PROPERTIES
   {

@@ -2,9 +2,9 @@ OBJECT Codeunit 10008852 Konto Data Synchronize Mgt.
 {
   OBJECT-PROPERTIES
   {
-    Date=30.05.17;
-    Time=16:13:31;
-    Version List=KONTO9.00;
+    Date=;
+    Time=;
+    Version List=;
   }
   PROPERTIES
   {
@@ -111,8 +111,9 @@ OBJECT Codeunit 10008852 Konto Data Synchronize Mgt.
     VAR
       MiniCustomerTemplate@10008851 : Record 1300;
       ConfigTemplateHeader@10000202 : Record 8618;
-      MiniConfigTemplates@10000201 : Page 1340;
       Customer@10008850 : Record 18;
+      MiniConfigTemplates@10008853 : Page 1340;
+      RecordVariant@10008854 : Variant;
       CustomerNo@10000200 : Code[20];
     BEGIN
       WITH TempCustomer DO BEGIN
@@ -124,7 +125,9 @@ OBJECT Codeunit 10008852 Konto Data Synchronize Mgt.
            ERROR('');
 
         ToCustomer(Customer);
-        Customer."Registration No." := Customer."No.";
+        RecordVariant := Customer;
+        PopulateOptionalField(RecordVariant,'Registration No.',Customer."No.");
+        Customer := RecordVariant;
         ConfigTemplateHeader.SETRANGE("Table ID",DATABASE::Customer);
         CASE ConfigTemplateHeader.COUNT OF
           0:
@@ -415,6 +418,18 @@ OBJECT Codeunit 10008852 Konto Data Synchronize Mgt.
       Setup.GET;
       Setup.TESTFIELD("Def. VAT Bus. Pst. Gr. (Price)");
       EXIT(Setup."Def. VAT Bus. Pst. Gr. (Price)");
+    END;
+
+    LOCAL PROCEDURE PopulateOptionalField@10008865(VAR RecordVariant@10008850 : Variant;FieldName@10008851 : Text;FieldValue@10008852 : Variant);
+    VAR
+      DataTypeMgt@10008855 : Codeunit 701;
+      RecRef@10008854 : RecordRef;
+      FldRef@10008853 : FieldRef;
+    BEGIN
+      IF NOT DataTypeMgt.GetRecordRef(RecordVariant,RecRef) THEN EXIT;
+      IF NOT DataTypeMgt.FindFieldByName(RecRef,FldRef,FieldName) THEN EXIT;
+      FldRef.VALUE := FieldValue;
+      RecRef.SETTABLE(RecordVariant);
     END;
 
     BEGIN

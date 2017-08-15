@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Customer Details"(Page 10008852)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Customer Details"(Page 10008852);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+
