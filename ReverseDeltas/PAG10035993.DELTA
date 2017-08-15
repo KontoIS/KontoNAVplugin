@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Expense List"(Page 10035993)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Expense List"(Page 10035993);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

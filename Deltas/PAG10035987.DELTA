@@ -1,0 +1,100 @@
+OBJECT Page 10035987 Konto Customer Details
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Customer Details;
+               ISL=Konto viÐskiptamannaupplìsingar];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10035986;
+    DataCaptionExpr="Customer Name";
+    PageType=Card;
+    SourceTableTemporary=Yes;
+    ShowFilter=No;
+  }
+  CONTROLS
+  {
+    { 10035985;0;Container;
+                ContainerType=ContentArea }
+
+    { 10035986;1;Group    ;
+                Name=General;
+                GroupType=Group }
+
+    { 10035992;2;Field    ;
+                SourceExpr=Status }
+
+    { 10035987;2;Field    ;
+                SourceExpr="Customer Registration No." }
+
+    { 10035988;2;Field    ;
+                SourceExpr="Customer Name" }
+
+    { 10035989;2;Field    ;
+                SourceExpr="Customer Address" }
+
+    { 10035990;2;Field    ;
+                SourceExpr="Customer Post Code" }
+
+    { 10035991;2;Field    ;
+                SourceExpr="Customer City" }
+
+    { 10035993;2;Field    ;
+                SourceExpr="Customer E-Mail Address" }
+
+    { 10035994;2;Field    ;
+                SourceExpr="Customer Payment Terms" }
+
+    { 10035996;2;Field    ;
+                SourceExpr="Customer Due Date Rule" }
+
+    { 10035997;2;Field    ;
+                SourceExpr="Customer Settlement Date Rule" }
+
+    { 10035998;2;Field    ;
+                SourceExpr="Customer Trading Partner ID" }
+
+    { 10035999;2;Field    ;
+                SourceExpr="Customer Language Code" }
+
+    { 10036000;2;Field    ;
+                SourceExpr="Customer Currency Code" }
+
+    { 10036001;2;Field    ;
+                SourceExpr="Customer Tax Exempt" }
+
+    { 10036002;2;Field    ;
+                SourceExpr="Record Updated" }
+
+    { 10036003;2;Field    ;
+                SourceExpr="Customer Claim Subscription" }
+
+    { 10036004;2;Field    ;
+                SourceExpr="Customer Discount Subscription" }
+
+    { 10035995;2;Field    ;
+                SourceExpr="Customer Photo" }
+
+  }
+  CODE
+  {
+
+    PROCEDURE Set@10035985(VAR TempCustomer@10035985 : Record 10035986);
+    BEGIN
+      COPY(TempCustomer,TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

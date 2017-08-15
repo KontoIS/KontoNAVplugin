@@ -1,0 +1,524 @@
+OBJECT Codeunit 10035985 Konto Service Mgt.
+{
+  OBJECT-PROPERTIES
+  {
+    Date=13.05.17;
+    Time=14:13:53;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Permissions=TableData 1260=r;
+    OnRun=BEGIN
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      MissingCredentialsQst@1000 : TextConst '@@@="%1=error message. %2=Konto Service Setup";ENU=%1\ Do you want to open %2 to specify the missing values?;ISL=%1\Viltu opna %2 til a– tilgreina gildin sem vantar?';
+      MissingCredentialsErr@1001 : TextConst '@@@="%1 = Konto Service Setup";ENU=You must fill the User Name and Password fields ° %1;ISL=Ë£ ver–ur a– fylla £t ° notandakenni og lykilor– ° %1';
+      KontoServiceSetup@1003 : Record 10035985;
+      AuthCookie@1002 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Net.Cookie";
+      ConnectionSuccessMsg@1006 : TextConst 'ENU=Connection succeeded.;ISL=Tenging t¢kast.';
+      ConnectionFailedErr@1005 : TextConst 'ENU=The connection failed. Check that the User Name and Password fields are filled correctly.;ISL=Tengingin mist¢kst.  Kanna–u a– notandakenni og lylikor– sÇ rÇtt £t fyllt.';
+      AuthenticateMsg@1015 : TextConst 'ENU=Log on to Konto Service;ISL=Innskr†ning ° Konto Áj¢nustuna';
+      DetailedMsg@10035985 : TextConst 'ENU=Konto Service Details;ISL=Konto Áj¢nustuupplÏsingar';
+      DetailedActivityMsg@10035987 : TextConst 'ENU=Url: %1, %2. Response: %3;ISL=Vefsl¢–: %1, %2. Svar: %3';
+      RequestSuccessMsg@10035988 : TextConst 'ENU=Success;ISL=T¢kst';
+      RequestFailedMsg@10035989 : TextConst 'ENU=Failed;ISL=Mist¢kst';
+      KontoServiceMaintenanceModeMsg@10035986 : TextConst 'ENU=Konto Service is in maintenance mode.   Please try again later.;ISL=Konto Áj¢nustan er ° vi–haldsham.  Vinsamlega reyndu s°–ar.';
+      LoggingConstTxt@1012 : TextConst 'ENU=Konto Service;ISL=Konto Áj¢nusta';
+      IfNotEqualToErr@10035990 : TextConst '@@@="%1=caption of a field, %2=record name, %3=integer";ENU=''%1'' in ''%2'' must be equal to %3.;ISL=''%1'' ° ''%2'' ver–ur a– vera %3.';
+
+    PROCEDURE SetURLsToDefault@2(VAR KontoServiceSetup@1000 : Record 10035985);
+    BEGIN
+      KontoServiceSetup."Service URL" := 'https://konto.is/api/v1';
+    END;
+
+    PROCEDURE CheckCredentials@4();
+    VAR
+      KontoServiceSetup@1000 : Record 10035985;
+    BEGIN
+      WITH KontoServiceSetup DO BEGIN
+        IF NOT HasCredentials(KontoServiceSetup) THEN
+          IF CONFIRM(STRSUBSTNO(GetCredentialsQstText),TRUE) THEN BEGIN
+            COMMIT;
+            PAGE.RUNMODAL(PAGE::"Konto Service Setup",KontoServiceSetup);
+          END;
+
+        IF NOT HasCredentials(KontoServiceSetup) THEN
+          ERROR(GetCredentialsErrText);
+      END;
+    END;
+
+    LOCAL PROCEDURE HasCredentials@34(KontoServiceSetup@1000 : Record 10035985) : Boolean;
+    BEGIN
+      WITH KontoServiceSetup DO
+        EXIT(
+          GET AND
+          HasPassword("Password Key") AND
+          ("User Name" <> ''));
+    END;
+
+    PROCEDURE GetCredentialsErrText@3() : Text;
+    BEGIN
+      EXIT(MissingCredentialsErr);
+    END;
+
+    PROCEDURE GetCredentialsQstText@8() : Text;
+    VAR
+      KontoServiceSetup@1000 : Record 10035985;
+    BEGIN
+      EXIT(STRSUBSTNO(MissingCredentialsQst,GetCredentialsErrText,KontoServiceSetup.TABLECAPTION));
+    END;
+
+    PROCEDURE Authenticate@5(VAR ResponseString@10035985 : Text) : Boolean;
+    VAR
+      DataMgt@10035986 : Codeunit 10035986;
+      Url@10035987 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('hello');
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        LogActivityFailed(KontoServiceSetup.RECORDID,AuthenticateMsg,ConnectionFailedErr,'')
+      ELSE
+        LogActivitySucceeded(KontoServiceSetup.RECORDID,AuthenticateMsg,'','');
+
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetCustomerCount@10035992(VAR CustomerCount@10035986 : Integer) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-count-customers');
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadNoOfCustomers(ResponseString,CustomerCount);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetCustomers@10035986(VAR TempCustomer@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-customers');
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadCustomerList(ResponseString,TempCustomer);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetCustomer@10035991(CustomerID@10035989 : Text;VAR TempCustomer@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-customer') + '&guid=' + URLEncode(CustomerID);
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadSingleCustomer(ResponseString,TempCustomer);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE CreateCustomer@10035985(VAR TempCustomer@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      RequestString@10035990 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      RequestString := DataMgt.GetCreateCustomerJson(TempCustomer);
+      Url := GetKontoBasicUrl('create-customer') + '&data=' + URLEncode(RequestString);
+
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,RequestString);
+
+      DataMgt.ReadCreateCustomerResponse(ResponseString,TempCustomer);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetItemCount@10035993(VAR ItemCount@10035986 : Integer) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-count-items');
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadNoOfItems(ResponseString,ItemCount);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetItems@10035988(VAR TempItem@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-items');
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadItemList(ResponseString,TempItem);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetItem@10035990(ItemID@10035989 : Text;VAR TempItem@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-item') + '&guid=' + URLEncode(ItemID);
+      IF NOT TryGET(Url,ResponseString) THEN
+      EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadSingleItem(ResponseString,TempItem);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE CreateItem@10035989(VAR TempItem@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      RequestString@10035990 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      RequestString := DataMgt.GetCreateItemJson(TempItem);
+      Url := GetKontoBasicUrl('create-item') + '&data=' + URLEncode(RequestString);
+
+      IF NOT TryGET(Url,ResponseString) THEN
+      EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,RequestString);
+
+      DataMgt.ReadCreateItemResponse(ResponseString,TempItem);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetInvoices@10035994(VAR TempInvoice@10035986 : TEMPORARY Record 10035986;AccountingStatusFilter@10035989 : Text) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-invoices') + AccountingStatusFilter;
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadInvoiceList(ResponseString,TempInvoice);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE UpdateInvoice@10035999(VAR TempInvoice@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      RequestString@10035989 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      RequestString := DataMgt.GetUpdateInvoiceJson(TempInvoice);
+      Url := GetKontoBasicUrl('update-invoice') + '&guid=' + TempInvoice.ID + '&data=' + URLEncode(RequestString);
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetExpenseCount@10035998(VAR ExpenseCount@10035986 : Integer) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-count-costs');
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadNoOfExpense(ResponseString,ExpenseCount);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetExpenses@10035997(VAR TempExpense@10035986 : TEMPORARY Record 10035986;AccountingStatusFilter@10035989 : Text) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-costs') + AccountingStatusFilter;
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadExpenseList(ResponseString,TempExpense);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE GetExpense@10035995(ExpenseID@10035989 : Text;VAR TempExpense@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      Url := GetKontoBasicUrl('get-cost') + '&guid=' + URLEncode(ExpenseID);
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      DataMgt.ReadSingleExpense(ResponseString,TempExpense);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE UpdateExpense@10036000(VAR TempExpense@10035986 : TEMPORARY Record 10035986) : Boolean;
+    VAR
+      DataMgt@10035987 : Codeunit 10035986;
+      Url@10035988 : Text;
+      RequestString@10035989 : Text;
+      ResponseString@10035985 : Text;
+    BEGIN
+      RequestString := DataMgt.GetUpdateExpenseJson(TempExpense);
+      Url := GetKontoBasicUrl('update-cost') + '&guid=' + TempExpense.ID + '&data=' + URLEncode(RequestString);
+      IF NOT TryGET(Url,ResponseString) THEN
+        EXIT(FALSE);
+
+      ResponseString := DataMgt.JsonToXml(ResponseString);
+      IF STRPOS(ResponseString,'<status>true</status>') < 1 THEN
+        DataMgt.ShowMessageAsError(ResponseString,'');
+
+      EXIT(TRUE);
+    END;
+
+    LOCAL PROCEDURE TryGET@27(Url@10035985 : Text;VAR ResponseString@1006 : Text) Success : Boolean;
+    VAR
+      TempBlob@1003 : Record 99008535;
+      HttpWebRequestMgt@1000 : Codeunit 1297;
+      DataMgt@10035987 : Codeunit 10035986;
+      HttpStatusCode@1004 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Net.HttpStatusCode";
+      ResponseHeaders@1005 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Collections.Specialized.NameValueCollection";
+      Env@10035988 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Environment";
+      InStr@1002 : InStream;
+      TextLine@10035986 : Text;
+    BEGIN
+      HttpWebRequestMgt.Initialize(Url);
+      HttpWebRequestMgt.DisableUI;
+      HttpWebRequestMgt.SetReturnType('application/json');
+      TempBlob.INIT;
+      TempBlob.Blob.CREATEINSTREAM(InStr);
+      Success := TryGetResponse(HttpWebRequestMgt,HttpStatusCode,ResponseHeaders,InStr);
+
+      IF TempBlob.Blob.HASVALUE THEN
+        WHILE InStr.READTEXT(TextLine) > 0 DO
+          ResponseString += TextLine;
+
+      IF KontoServiceSetup."Enable Detailed Logging" THEN
+        IF Success THEN
+          LogActivitySucceeded(KontoServiceSetup.RECORDID,DetailedMsg,RequestSuccessMsg,STRSUBSTNO(DetailedActivityMsg,Url,Env.NewLine,ResponseString))
+        ELSE
+          LogActivitySucceeded(KontoServiceSetup.RECORDID,DetailedMsg,RequestFailedMsg,STRSUBSTNO(DetailedActivityMsg,Url,Env.NewLine,ResponseString));
+    END;
+
+    [TryFunction]
+    LOCAL PROCEDURE TryGetResponse@10035987(VAR HttpWebRequestMgt@10035988 : Codeunit 1297;VAR HttpStatusCode@10035987 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Net.HttpStatusCode";VAR ResponseHeaders@10035986 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Collections.Specialized.NameValueCollection";VAR InStr@10035985 : InStream);
+    BEGIN
+      IF NOT HttpWebRequestMgt.GetResponse(InStr,HttpStatusCode,ResponseHeaders) THEN
+        HttpWebRequestMgt.ProcessFaultResponse('http://www.konto.is/support');
+    END;
+
+    LOCAL PROCEDURE URLEncode@19(InText@1000 : Text) : Text;
+    VAR
+      SystemWebHttpUtility@1001 : DotNet "'System.Web, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.System.Web.HttpUtility";
+    BEGIN
+      SystemWebHttpUtility := SystemWebHttpUtility.HttpUtility;
+      EXIT(SystemWebHttpUtility.UrlEncode(InText));
+    END;
+
+    LOCAL PROCEDURE GetKontoBasicUrl@10035996(Method@10035985 : Text) Url : Text;
+    BEGIN
+      GetKontoServiceSetup(FALSE);
+      Url :=
+        STRSUBSTNO('%1/%2?username=%3&api_key=%4',
+          KontoServiceSetup."Service URL",
+          Method,
+          URLEncode(KontoServiceSetup."User Name"),
+          KontoServiceSetup.GetPassword(KontoServiceSetup."Password Key"));
+    END;
+
+    LOCAL PROCEDURE GetKontoServiceSetup@1(VerifyEnable@1000 : Boolean);
+    BEGIN
+      KontoServiceSetup.GET;
+      IF KontoServiceSetup."Service URL" <> '' THEN
+        EXIT;
+      IF VerifyEnable THEN
+        KontoServiceSetup.CheckEnabled;
+      KontoServiceSetup.TESTFIELD("User Name");
+      KontoServiceSetup.TESTFIELD("Service URL");
+    END;
+
+    LOCAL PROCEDURE LogActivitySucceeded@31(RelatedRecordID@1001 : RecordID;ActivityDescription@1002 : Text;ActivityMessage@1003 : Text;ActivityDetails@10035985 : Text);
+    VAR
+      ActivityLog@1000 : Record 710;
+    BEGIN
+      ActivityLog.LogActivity(RelatedRecordID,ActivityLog.Status::Success,LoggingConstTxt,
+        ActivityDescription,ActivityMessage);
+      IF ActivityDetails <> '' THEN BEGIN
+        ActivityLog.SetDetailedInfoFromText(ActivityDetails);
+        COMMIT;
+      END;
+    END;
+
+    LOCAL PROCEDURE LogActivityFailed@29(RelatedRecordID@1001 : RecordID;ActivityDescription@1002 : Text;ActivityMessage@1003 : Text;ActivityDetails@10035985 : Text);
+    VAR
+      ActivityLog@1000 : Record 710;
+    BEGIN
+      ActivityMessage := GETLASTERRORTEXT + ' ' + ActivityMessage;
+      CLEARLASTERROR;
+
+      ActivityLog.LogActivity(RelatedRecordID,ActivityLog.Status::Failed,LoggingConstTxt,
+        ActivityDescription,ActivityMessage);
+      IF ActivityDetails <> '' THEN
+        ActivityLog.SetDetailedInfoFromText(ActivityDetails);
+      COMMIT;
+
+      IF DELCHR(ActivityMessage,'<>',' ') <> '' THEN
+        ERROR(ActivityMessage);
+    END;
+
+    [EventSubscriber(Table,1400,OnRegisterServiceConnection)]
+    PROCEDURE HandleKontoRegisterServiceConnection@20(VAR ServiceConnection@1003 : Record 1400);
+    VAR
+      KontoServiceSetup@1001 : Record 10035985;
+      RecRef@1002 : RecordRef;
+    BEGIN
+      IF NOT KontoServiceSetup.GET THEN BEGIN
+        KontoServiceSetup.INIT;
+        KontoServiceSetup.INSERT(TRUE);
+      END;
+      RecRef.GETTABLE(KontoServiceSetup);
+
+      IF KontoServiceSetup.Enabled THEN
+        ServiceConnection.Status := ServiceConnection.Status::Enabled
+      ELSE
+        ServiceConnection.Status := ServiceConnection.Status::Disabled;
+      WITH KontoServiceSetup DO
+        ServiceConnection.InsertServiceConnection(
+          ServiceConnection,RecRef.RECORDID,TABLECAPTION,"Service URL",PAGE::"Konto Service Setup");
+    END;
+
+    PROCEDURE TestConnection@46(VAR KontoServiceSetup@1000 : Record 10035985);
+    BEGIN
+      IF SetupConnection(KontoServiceSetup) THEN
+        MESSAGE(ConnectionSuccessMsg);
+    END;
+
+    PROCEDURE SetupConnection@40(VAR KontoServiceSetup@1000 : Record 10035985) : Boolean;
+    VAR
+      DataMgt@10035985 : Codeunit 10035986;
+      ResponseString@10035986 : Text;
+    BEGIN
+      IF NOT HasCredentials(KontoServiceSetup) THEN
+        ERROR(GetCredentialsErrText);
+      IF NOT Authenticate(ResponseString) THEN
+        ERROR(ConnectionFailedErr);
+      DataMgt.UpdateOrganizationInfo(KontoServiceSetup,ResponseString);
+      EXIT(TRUE);
+    END;
+
+    PROCEDURE VerifyAccountingDetails@10036001(VAR KontoServiceSetup@10035985 : Record 10035985);
+    VAR
+      CompanyInfo@10035986 : Record 79;
+      TempErrorMessage@10035987 : TEMPORARY Record 700;
+      MessageType@10035988 : 'Error,Warning,Information';
+    BEGIN
+      CompanyInfo.GET;
+      WITH KontoServiceSetup DO BEGIN
+        TempErrorMessage.SetContext(KontoServiceSetup);
+        IF ("Account Name" <> '') AND (CompanyInfo.Name <> '') AND ("Account Name" <> CompanyInfo.Name) THEN
+          TempErrorMessage.LogMessage(
+            KontoServiceSetup,
+            FIELDNO("Account Name"),
+            MessageType::Warning,
+            STRSUBSTNO(IfNotEqualToErr,FIELDCAPTION("Account Name"),TABLECAPTION,CompanyInfo.Name));
+        IF ("Account Registration ID" <> '') AND (CompanyInfo."Registration No." <> '') AND ("Account Registration ID" <> CompanyInfo."Registration No.") THEN
+          TempErrorMessage.LogMessage(
+            KontoServiceSetup,
+            FIELDNO("Account Registration ID"),
+            MessageType::Warning,
+            STRSUBSTNO(IfNotEqualToErr,FIELDCAPTION("Account Registration ID"),TABLECAPTION,CompanyInfo."Registration No."));
+        IF ("Account VAT Registration No." <> '') AND (CompanyInfo."VAT Registration No." <> '') AND ("Account VAT Registration No." <> CompanyInfo."VAT Registration No.") THEN
+          TempErrorMessage.LogMessage(
+            KontoServiceSetup,
+            FIELDNO("Account VAT Registration No."),
+            MessageType::Warning,
+            STRSUBSTNO(IfNotEqualToErr,FIELDCAPTION("Account VAT Registration No."),TABLECAPTION,CompanyInfo."VAT Registration No."));
+        TempErrorMessage.ShowErrorMessages(FALSE);
+      END;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

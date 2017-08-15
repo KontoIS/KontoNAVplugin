@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Integration Record"(Table 10035986)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Integration Record"(Table 10035986);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

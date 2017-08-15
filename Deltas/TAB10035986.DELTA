@@ -1,0 +1,545 @@
+OBJECT Table 10035986 Konto Integration Record
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    CaptionML=[ENU=Konto Integration Record;
+               ISL=Konto samstillingarfërsla];
+  }
+  FIELDS
+  {
+    { 1   ;   ;ID                  ;Text50        ;CaptionML=[ENU=ID;
+                                                              ISL=Kenni] }
+    { 2   ;   ;Related Record ID   ;RecordID      ;CaptionML=[ENU=Related Record ID;
+                                                              ISL=Kenni tengdar fërslu] }
+    { 3   ;   ;Status              ;Option        ;CaptionML=[ENU=Status;
+                                                              ISL=Sta–a];
+                                                   OptionCaptionML=[ENU=New in Konto,New in NAV,Updated in Konto,Updated in NAV,Synchronized;
+                                                                    ISL=NÏtt ° Konto,NÏtt ° NAV,Uppfërt ° Konto,Uppfërt ° NAV,Samstillt];
+                                                   OptionString=New in Konto,New in NAV,Updated in Konto,Updated in NAV,Synchronized }
+    { 4   ;   ;Table ID            ;Integer       ;CaptionML=[ENU=Table ID;
+                                                              ISL=Tîflukenni] }
+    { 5   ;   ;Cluster Key         ;Integer       ;AutoIncrement=Yes;
+                                                   CaptionML=[ENU=Cluster Key;
+                                                              ISL=Rî–unarlykill] }
+    { 6   ;   ;Posted              ;Boolean       ;CaptionML=[ENU=Posted;
+                                                              ISL=B¢ka–] }
+    { 7   ;   ;Skipped             ;Boolean       ;CaptionML=[ENU=Skipped;
+                                                              ISL=Sleppt] }
+    { 10  ;   ;Customer Name       ;Text250       ;CaptionML=[ENU=Customer Name;
+                                                              ISL=Nafn vi–skiptamanns] }
+    { 11  ;   ;Customer Address    ;Text50        ;CaptionML=[ENU=Customer Address;
+                                                              ISL=A–setur vi–skiptamanns] }
+    { 12  ;   ;Customer Post Code  ;Code10        ;CaptionML=[ENU=Customer Post Code;
+                                                              ISL=P¢stn£mer vi–skiptamanns] }
+    { 13  ;   ;Customer City       ;Text30        ;CaptionML=[ENU=Customer City;
+                                                              ISL=Bër vi–skiptamanns] }
+    { 14  ;   ;Customer Registration No.;Text20   ;CaptionML=[ENU=Customer Registration No.;
+                                                              ISL=Kennitala vi–skiptamanns] }
+    { 15  ;   ;Customer E-Mail Address;Text80     ;CaptionML=[ENU=Customer E-Mail Address;
+                                                              ISL=Netfang vi–skiptamanns] }
+    { 16  ;   ;Customer Payment Terms;Text120     ;CaptionML=[ENU=Customer Payment Terms;
+                                                              ISL=Grei–skilskilm. vi–skiptamanns] }
+    { 17  ;   ;Customer Photo      ;BLOB          ;CaptionML=[ENU=Customer Photo;
+                                                              ISL=Mynd vi–skiptamanns];
+                                                   SubType=Bitmap }
+    { 18  ;   ;Customer Due Date Rule;Integer     ;InitValue=3;
+                                                   CaptionML=[ENU=Customer Due Date Rule;
+                                                              ISL=Gjalddagaregla vi–skiptamanns] }
+    { 19  ;   ;Customer Settlement Date Rule;Integer;
+                                                   InitValue=7;
+                                                   CaptionML=[ENU=Customer Settlement Date Rule;
+                                                              ISL=Eindagaregla vi–skiptamanns] }
+    { 20  ;   ;Customer Trading Partner ID;Code20 ;CaptionML=[ENU=Customer Trading Partner ID;
+                                                              ISL=Rafrënt kenni vi–skiptamanns] }
+    { 21  ;   ;Customer Language Code;Text10      ;InitValue=IS;
+                                                   CaptionML=[ENU=Customer Language Code;
+                                                              ISL=Tungum†lak¢ti vi–skiptamanns] }
+    { 22  ;   ;Customer Currency Code;Text10      ;InitValue=ISK;
+                                                   CaptionML=[ENU=Customer Currency Code;
+                                                              ISL=Gjaldmi–ilsk¢ti vi–skiptamanns] }
+    { 23  ;   ;Customer Tax Exempt ;Boolean       ;CaptionML=[ENU=Customer Tax Exempt;
+                                                              ISL=Skattskylda vi–skiptamanns] }
+    { 24  ;   ;Record Updated      ;DateTime      ;CaptionML=[ENU=Record Updated;
+                                                              ISL=Fërsla uppfërt] }
+    { 25  ;   ;Customer Claim Subscription;Boolean;CaptionML=[ENU=Customer Claim Subscription;
+                                                              ISL=Krîfu†skrift vi–skiptamanns] }
+    { 26  ;   ;Customer Discount Subscription;Boolean;
+                                                   CaptionML=[ENU=Customer Discount Subscription;
+                                                              ISL=Afsl†ttar†skrif vi–skiptamanns] }
+    { 50  ;   ;Item Number         ;Integer       ;CaptionML=[ENU=Item Number;
+                                                              ISL=N£mer vîru] }
+    { 51  ;   ;Item Description    ;Text250       ;CaptionML=[ENU=Item Description;
+                                                              ISL=LÏsing vîru] }
+    { 52  ;   ;Item Unit of Measure;Code10        ;CaptionML=[ENU=Item Unit of Measure;
+                                                              ISL=Mëlieining vîru] }
+    { 53  ;   ;Item Tax Category   ;Code10        ;CaptionML=[ENU=Item Tax Category;
+                                                              ISL=Skattflokkur vîru] }
+    { 54  ;   ;Item Unit Price     ;Decimal       ;CaptionML=[ENU=Item Unit Price;
+                                                              ISL=Einingarver– vîru] }
+    { 55  ;   ;Item Category       ;Code20        ;CaptionML=[ENU=Item Category;
+                                                              ISL=Vîruflokkur] }
+    { 56  ;   ;Item Active         ;Boolean       ;CaptionML=[ENU=Item Active;
+                                                              ISL=Vara virk] }
+    { 57  ;   ;Item Quantity       ;Decimal       ;CaptionML=[ENU=Item Quantity;
+                                                              ISL=Magn vîru];
+                                                   DecimalPlaces=0:5 }
+    { 58  ;   ;Item Amount         ;Decimal       ;CaptionML=[ENU=Item Amount;
+                                                              ISL=Upphë– vîru];
+                                                   DecimalPlaces=0:0 }
+    { 59  ;   ;Item Discount       ;Decimal       ;CaptionML=[ENU=Item Discount;
+                                                              ISL=Afsl†ttur vîru];
+                                                   DecimalPlaces=0:2;
+                                                   BlankZero=Yes }
+    { 60  ;   ;Item Discount Type  ;Option        ;CaptionML=[ENU=Item Discount Type;
+                                                              ISL=Afsl†ttartegund vîru];
+                                                   OptionCaptionML=[ENU=Price,Percentage;
+                                                                    ISL=Ver–,Pr¢senta];
+                                                   OptionString=Price,Percentage }
+    { 61  ;   ;Item VAT Amount     ;Decimal       ;CaptionML=[ENU=Item VAT Amount;
+                                                              ISL=VSK upphë– vîru];
+                                                   DecimalPlaces=0:0;
+                                                   BlankZero=Yes }
+    { 62  ;   ;Item Amount Incl. VAT;Decimal      ;CaptionML=[ENU=Item Amount Incl. VAT;
+                                                              ISL=Upphë– vîru m. VSK];
+                                                   DecimalPlaces=0:0 }
+    { 63  ;   ;Item VAT %          ;Decimal       ;CaptionML=[ENU=Item VAT %;
+                                                              ISL=VSK % vîru];
+                                                   DecimalPlaces=0:1;
+                                                   MinValue=0;
+                                                   MaxValue=100;
+                                                   BlankZero=Yes }
+    { 70  ;   ;Invoice Number      ;Code20        ;CaptionML=[ENU=Invoice Number;
+                                                              ISL=N£mer reiknings] }
+    { 71  ;   ;Invoice Amount      ;Decimal       ;CaptionML=[ENU=Invoice Amount;
+                                                              ISL=Upphë– reiknings] }
+    { 72  ;   ;Invoice Currency Code;Code10       ;CaptionML=[ENU=Invoice Currency Code;
+                                                              ISL=Gjaldmi–ilsk¢ti reiknings] }
+    { 73  ;   ;Invoice Status      ;Text30        ;CaptionML=[ENU=Invoice Status;
+                                                              ISL=Sta–a reiknings] }
+    { 74  ;   ;Invoice Issue Date  ;Date          ;CaptionML=[ENU=Invoice Issue Date;
+                                                              ISL=Ètg†fudagur reiknings] }
+    { 75  ;   ;Invoice Due Date    ;Date          ;CaptionML=[ENU=Invoice Due Date;
+                                                              ISL=Gjalddagi reiknings] }
+    { 76  ;   ;Invoice Settlement Date;Date       ;CaptionML=[ENU=Invoice Settlement Date;
+                                                              ISL=Eindagi reiknings] }
+    { 77  ;   ;Invoice Description ;Text250       ;CaptionML=[ENU=Invoice Description;
+                                                              ISL=LÏsing reiknings] }
+    { 78  ;   ;Invoice Booking     ;Text250       ;CaptionML=[ENU=Invoice Booking;
+                                                              ISL=B¢kunarsta–a reiknings] }
+    { 79  ;   ;Invoice Cost Provide;Text50        ;CaptionML=[ENU=Invoice Cost Provide;
+                                                              ISL=Kostana–arsta–ur reiknings] }
+    { 80  ;   ;Invoice Delivery Date;Date         ;CaptionML=[ENU=Invoice Delivery Date;
+                                                              ISL=Afhendingardagur reiknings] }
+    { 81  ;   ;Invoice Terms       ;Text50        ;CaptionML=[ENU=Invoice Terms;
+                                                              ISL=Skilm†lar reiknings] }
+    { 82  ;   ;Invoice Type        ;Text10        ;CaptionML=[ENU=Invoice Type;
+                                                              ISL=Tegund reiknings] }
+    { 83  ;   ;Invoice Reference ID;Text50        ;CaptionML=[ENU=Invoice Reference ID;
+                                                              ISL=Tilv°sunarkenni reiknings] }
+    { 84  ;   ;Invoice Items       ;BLOB          ;CaptionML=[ENU=Invoice Items;
+                                                              ISL=Vîrul°nur reiknings] }
+    { 85  ;   ;Invoice Customer    ;BLOB          ;CaptionML=[ENU=Invoice Customer;
+                                                              ISL=Vi–skiptama–ur reiknings] }
+    { 90  ;   ;Expense Description ;Text250       ;CaptionML=[ENU=Expense Description;
+                                                              ISL=LÏsing kostna–ar] }
+    { 91  ;   ;Expense Vendor Reg. No.;Text20     ;CaptionML=[ENU=Expense Vendor Reg. No.;
+                                                              ISL=Kennitala l†nardr. kostna–ar] }
+    { 92  ;   ;Expense VAT Registration No.;Text20;CaptionML=[ENU=Expense VAT Registration No.;
+                                                              ISL=VSK n£mer l†nardr. kostna–ar] }
+    { 93  ;   ;Expense Amount      ;Decimal       ;CaptionML=[ENU=Expense Amount;
+                                                              ISL=Upphë– kostna–ar] }
+    { 94  ;   ;Expense Attachment  ;BLOB          ;CaptionML=[ENU=Expense Attachment;
+                                                              ISL=Vi–hengi kostana–ar];
+                                                   SubType=Bitmap }
+    { 95  ;   ;Expense Xml         ;BLOB          ;CaptionML=[ENU=Expense Xml;
+                                                              ISL=Xml kostana–ar] }
+  }
+  KEYS
+  {
+    {    ;ID                                       }
+    {    ;Related Record ID                        }
+    {    ;Cluster Key                             ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      GLSetup@10035985 : Record 98;
+
+    PROCEDURE ToCustomer@10035985(VAR Customer@10035985 : Record 18);
+    BEGIN
+      GLSetup.GET;
+      Customer."No." := "Customer Registration No.";
+      Customer.Name := COPYSTR("Customer Name",1,MAXSTRLEN(Customer.Name));
+      Customer.Address := "Customer Address";
+      Customer."Post Code" := "Customer Post Code";
+      Customer.City := "Customer City";
+      Customer."E-Mail" := Customer."E-Mail";
+      IF "Customer Photo".HASVALUE THEN BEGIN
+        CALCFIELDS("Customer Photo");
+        Customer.Picture := "Customer Photo";
+      END;
+      Customer.GLN := "Customer Trading Partner ID";
+      CASE "Customer Language Code" OF
+        'is': Customer."Language Code" := 'ISL';
+        'en': Customer."Language Code" := 'ENU';
+      END;
+      IF "Customer Currency Code" <> GLSetup."LCY Code" THEN
+        Customer."Currency Code" := "Customer Currency Code";
+    END;
+
+    PROCEDURE FromCustomer@10035986(Customer@10035985 : Record 18);
+    VAR
+      PaymentTerms@10035986 : Record 3;
+    BEGIN
+      GLSetup.GET;
+      "Customer Registration No." := Customer."No.";
+      "Customer Name" := Customer.Name;
+      "Customer Address" := Customer.Address;
+      "Customer Post Code" := Customer."Post Code";
+      "Customer City" := Customer.City;
+      "Customer E-Mail Address" := Customer."E-Mail";
+      IF Customer.Picture.HASVALUE THEN BEGIN
+        Customer.CALCFIELDS(Picture);
+        "Customer Photo" := Customer.Picture;
+      END;
+      "Customer Trading Partner ID" := Customer.GLN;
+      CASE Customer."Language Code" OF
+        '','ISL': "Customer Language Code" := 'is';
+        'ENU': "Customer Language Code" := 'en';
+      END;
+      IF Customer."Currency Code" = '' THEN
+        "Customer Currency Code" := GLSetup."LCY Code"
+      ELSE
+        "Customer Currency Code" := Customer."Currency Code";
+      IF PaymentTerms.GET(Customer."Payment Terms Code") THEN
+        "Customer Payment Terms" := PaymentTerms.Description;
+      "Customer Tax Exempt" := NOT ModulusCheck(DELCHR(Customer."No.",'=','-'));
+      "Related Record ID" := Customer.RECORDID;
+      Status := Status::Synchronized;
+    END;
+
+    PROCEDURE GetCustomer@10035987(VAR Customer@10035985 : Record 18);
+    VAR
+      RecRef@10035986 : RecordRef;
+    BEGIN
+      IF RecRef.GET("Related Record ID") THEN
+        RecRef.SETTABLE(Customer);
+    END;
+
+    PROCEDURE ToItem@10035990(VAR Item@10035985 : Record 27);
+    BEGIN
+      GLSetup.GET;
+      Item.Description := COPYSTR("Item Description",1,MAXSTRLEN(Item.Description));
+      Item."Unit Price" := "Item Unit Price";
+      Item."Item Category Code" := "Item Category";
+      Item.Blocked := NOT "Item Active";
+      Item."Price Includes VAT" := FALSE;
+    END;
+
+    PROCEDURE FromItem@10035989(Item@10035985 : Record 27);
+    VAR
+      PaymentTerms@10035986 : Record 3;
+    BEGIN
+      GLSetup.GET;
+      "Item Description" := Item.Description;
+      "Item Unit Price" := Item."Unit Price";
+      "Item Category" := Item."Item Category Code";
+      "Item Active" := NOT Item.Blocked;
+      "Related Record ID" := Item.RECORDID;
+      Status := Status::Synchronized;
+    END;
+
+    PROCEDURE GetItem@10035988(VAR Item@10035985 : Record 27);
+    VAR
+      RecRef@10035986 : RecordRef;
+    BEGIN
+      IF RecRef.GET("Related Record ID") THEN
+        RecRef.SETTABLE(Item);
+    END;
+
+    PROCEDURE GetInvoiceItems@10035991(VAR TempInvoiceItem@10035985 : Record 10035986);
+    VAR
+      DataMgt@10035988 : Codeunit 10035986;
+    BEGIN
+      DataMgt.ReadInvoiceItems(ReadInvoiceItemsAsText,TempInvoiceItem);
+    END;
+
+    PROCEDURE GetInvoiceCustomer@10035992(VAR TempInvoiceCustomer@10035985 : Record 10035986);
+    VAR
+      DataMgt@10035988 : Codeunit 10035986;
+    BEGIN
+      DataMgt.ReadInvoiceCustomers(ReadInvoiceCustomerAsText,TempInvoiceCustomer);
+    END;
+
+    PROCEDURE MergeInvoiceCustomer@10035993();
+    VAR
+      TempInvoiceCustomer@10035985 : TEMPORARY Record 10035986;
+    BEGIN
+      GetInvoiceCustomer(TempInvoiceCustomer);
+      "Customer Name" := TempInvoiceCustomer."Customer Name";
+      "Customer Address" := TempInvoiceCustomer."Customer Address";
+      "Customer Post Code" := TempInvoiceCustomer."Customer Post Code";
+      "Customer City" := TempInvoiceCustomer."Customer City";
+      "Customer Registration No." := TempInvoiceCustomer."Customer Registration No.";
+      "Customer E-Mail Address" := TempInvoiceCustomer."Customer E-Mail Address";
+    END;
+
+    PROCEDURE ToIncomingDocument@10036000(VAR IncomingDocument@10035985 : Record 130);
+    VAR
+      IncomingDocumentAttachment@10035989 : Record 133;
+      Vendor@10035995 : Record 23;
+      TempBlob@10035990 : Record 99008535;
+      DataTypeMgt@10035986 : Codeunit 701;
+      RecRef@10035987 : RecordRef;
+      FldRef@10035988 : FieldRef;
+      InStr@10035993 : InStream;
+      FileExtension@10035991 : Text;
+      ExpenseFileDesc@10035992 : TextConst 'ENU=Photo of Invoice';
+      ExpenseFileXml@10035994 : TextConst 'ENU=Xml data of Invoice';
+    BEGIN
+      RecRef.GETTABLE(IncomingDocument);
+      IF DataTypeMgt.FindFieldByName(RecRef,FldRef,'Vendor Registration No.') THEN
+        FldRef.VALUE := "Expense Vendor Reg. No.";
+      RecRef.SETTABLE(IncomingDocument);
+      IncomingDocument.Description := COPYSTR("Expense Description",1,MAXSTRLEN(IncomingDocument.Description));
+      IncomingDocument."Vendor VAT Registration No." := "Expense VAT Registration No.";
+      IncomingDocument."Amount Incl. VAT" := "Expense Amount";
+      Vendor.SETRANGE("VAT Registration No.","Expense VAT Registration No.");
+      IF Vendor.FINDFIRST THEN BEGIN
+        IncomingDocument."Vendor Name" := Vendor.Name;
+        IncomingDocument."Vendor No." := Vendor."No.";
+        IncomingDocument."Vendor Phone No." := Vendor."Phone No.";
+      END;
+
+      IF "Expense Attachment".HASVALUE THEN BEGIN
+        CALCFIELDS("Expense Attachment");
+        TempBlob.Blob := "Expense Attachment";
+        FileExtension := FindImageType(TempBlob);
+        TempBlob.Blob.CREATEINSTREAM(InStr);
+        IncomingDocument.AddAttachmentFromStream(
+          IncomingDocumentAttachment,
+          ExpenseFileDesc + '.' + FileExtension,
+          FileExtension,
+          InStr);
+      END;
+
+      IF "Expense Xml".HASVALUE THEN BEGIN
+        CALCFIELDS("Expense Xml");
+        TempBlob.Blob := "Expense Xml";
+        FileExtension := 'xml';
+        TempBlob.Blob.CREATEINSTREAM(InStr);
+        IncomingDocument.AddAttachmentFromStream(
+          IncomingDocumentAttachment,
+          ExpenseFileXml + '.' + FileExtension,
+          FileExtension,
+          InStr);
+      END;
+    END;
+
+    LOCAL PROCEDURE ModulusCheck@30(IDNo@1100409000 : Code[20]) : Boolean;
+    VAR
+      Modulus@1100409001 : Decimal;
+    BEGIN
+      IF STRLEN(IDNo) <> 10 THEN
+        EXIT;
+      IF NOT IsNumeric(IDNo) THEN
+        EXIT;
+
+      Modulus := STRCHECKSUM(COPYSTR(DELCHR(IDNo,'=','-'),1,8),'32765432',11);
+      EXIT(FORMAT(Modulus) = COPYSTR(DELCHR(IDNo,'=','-'),9,1));
+    END;
+
+    LOCAL PROCEDURE IsNumeric@31(CheckString@1100409000 : Text) : Boolean;
+    VAR
+      CharValue@1100409001 : Char;
+      Pos@1100409002 : Integer;
+    BEGIN
+      EXIT(DELCHR(CheckString,'=','1234567890') = '');
+    END;
+
+    LOCAL PROCEDURE FindImageType@60(TempBlob@10000200 : Record 99008535) FileExtension : Text;
+    VAR
+      Bytes@10000201 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Array";
+      Byte@10000202 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Byte";
+      MemoryStream@10000204 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+      InStr@10000203 : InStream;
+    BEGIN
+      IF NOT TempBlob.Blob.HASVALUE THEN EXIT('');
+
+      TempBlob.Blob.CREATEINSTREAM(InStr);
+      MemoryStream := MemoryStream.MemoryStream;
+      COPYSTREAM(MemoryStream,InStr);
+      Bytes := MemoryStream.ToArray;
+      Byte := Bytes.GetValue(0);
+      CASE Byte.ToString OF
+        '66' : EXIT('bmp');
+        '71' : EXIT('gif');
+        '0'  : EXIT('ico');
+        '255': EXIT('jpg');
+        '73' : EXIT('tiff');
+        '137': EXIT('png');
+      END;
+    END;
+
+    PROCEDURE WriteInvoiceItemsAsText@3(Content@1001 : Text);
+    VAR
+      OutStr@1002 : OutStream;
+    BEGIN
+      CLEAR("Invoice Items");
+      IF Content = '' THEN
+        EXIT;
+      "Invoice Items".CREATEOUTSTREAM(OutStr,TEXTENCODING::UTF8);
+      OutStr.WRITETEXT(Content);
+    END;
+
+    PROCEDURE ReadInvoiceItemsAsText@5() Content : Text;
+    VAR
+      InStream@1002 : InStream;
+      ContentLine@1003 : Text;
+    BEGIN
+      CALCFIELDS("Invoice Items");
+      "Invoice Items".CREATEINSTREAM(InStream,TEXTENCODING::UTF8);
+
+      InStream.READTEXT(Content);
+      WHILE NOT InStream.EOS DO BEGIN
+        InStream.READTEXT(ContentLine);
+        Content += ContentLine;
+      END;
+    END;
+
+    PROCEDURE WriteInvoiceCustomerAsText@10035995(Content@1001 : Text);
+    VAR
+      OutStr@1002 : OutStream;
+    BEGIN
+      CLEAR("Invoice Customer");
+      IF Content = '' THEN
+        EXIT;
+      "Invoice Customer".CREATEOUTSTREAM(OutStr,TEXTENCODING::UTF8);
+      OutStr.WRITETEXT(Content);
+    END;
+
+    PROCEDURE ReadInvoiceCustomerAsText@10035994() Content : Text;
+    VAR
+      InStream@1002 : InStream;
+      ContentLine@1003 : Text;
+    BEGIN
+      CALCFIELDS("Invoice Customer");
+      "Invoice Customer".CREATEINSTREAM(InStream,TEXTENCODING::UTF8);
+
+      InStream.READTEXT(Content);
+      WHILE NOT InStream.EOS DO BEGIN
+        InStream.READTEXT(ContentLine);
+        Content += ContentLine;
+      END;
+    END;
+
+    PROCEDURE CustomerPhotoToBase64String@1() : Text;
+    VAR
+      IStream@1000 : InStream;
+      Convert@1003 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Convert";
+      MemoryStream@1002 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+      Base64String@1001 : Text;
+    BEGIN
+      IF NOT "Customer Photo".HASVALUE THEN
+        EXIT('');
+      CALCFIELDS("Customer Photo");
+      "Customer Photo".CREATEINSTREAM(IStream);
+      MemoryStream := MemoryStream.MemoryStream;
+      COPYSTREAM(MemoryStream,IStream);
+      Base64String := Convert.ToBase64String(MemoryStream.ToArray);
+      MemoryStream.Close;
+      EXIT(Base64String);
+    END;
+
+    PROCEDURE CustomerPhotoFromBase64String@2(Base64String@1000 : Text);
+    VAR
+      OStream@1001 : OutStream;
+      Convert@1003 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Convert";
+      MemoryStream@1002 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+    BEGIN
+      IF Base64String = '' THEN
+        EXIT;
+      MemoryStream := MemoryStream.MemoryStream(Convert.FromBase64String(Base64String));
+      "Customer Photo".CREATEOUTSTREAM(OStream);
+      MemoryStream.WriteTo(OStream);
+      MemoryStream.Close;
+    END;
+
+    PROCEDURE ExpenseAttachmentToBase64String@10035997() : Text;
+    VAR
+      IStream@1000 : InStream;
+      Convert@1003 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Convert";
+      MemoryStream@1002 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+      Base64String@1001 : Text;
+    BEGIN
+      IF NOT "Expense Attachment".HASVALUE THEN
+        EXIT('');
+      CALCFIELDS("Expense Attachment");
+      "Expense Attachment".CREATEINSTREAM(IStream);
+      MemoryStream := MemoryStream.MemoryStream;
+      COPYSTREAM(MemoryStream,IStream);
+      Base64String := Convert.ToBase64String(MemoryStream.ToArray);
+      MemoryStream.Close;
+      EXIT(Base64String);
+    END;
+
+    PROCEDURE ExpenseAttachmentFromBase64String@10035996(Base64String@1000 : Text);
+    VAR
+      OStream@1001 : OutStream;
+      Convert@1003 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Convert";
+      MemoryStream@1002 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+    BEGIN
+      IF Base64String = '' THEN
+        EXIT;
+      MemoryStream := MemoryStream.MemoryStream(Convert.FromBase64String(Base64String));
+      "Expense Attachment".CREATEOUTSTREAM(OStream);
+      MemoryStream.WriteTo(OStream);
+      MemoryStream.Close;
+    END;
+
+    PROCEDURE ExpenseXmlToBase64String@10035999() : Text;
+    VAR
+      IStream@1000 : InStream;
+      Convert@1003 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Convert";
+      MemoryStream@1002 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+      Base64String@1001 : Text;
+    BEGIN
+      IF NOT "Expense Xml".HASVALUE THEN
+        EXIT('');
+      CALCFIELDS("Expense Xml");
+      "Expense Xml".CREATEINSTREAM(IStream);
+      MemoryStream := MemoryStream.MemoryStream;
+      COPYSTREAM(MemoryStream,IStream);
+      Base64String := Convert.ToBase64String(MemoryStream.ToArray);
+      MemoryStream.Close;
+      EXIT(Base64String);
+    END;
+
+    PROCEDURE ExpenseXmlFromBase64String@10035998(Base64String@1000 : Text);
+    VAR
+      OStream@1001 : OutStream;
+      Convert@1003 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Convert";
+      MemoryStream@1002 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+    BEGIN
+      IF Base64String = '' THEN
+        EXIT;
+      MemoryStream := MemoryStream.MemoryStream(Convert.FromBase64String(Base64String));
+      "Expense Xml".CREATEOUTSTREAM(OStream);
+      MemoryStream.WriteTo(OStream);
+      MemoryStream.Close;
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

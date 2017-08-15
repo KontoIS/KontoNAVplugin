@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Service Setup"(Table 10035985)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Service Setup"(Table 10035985);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

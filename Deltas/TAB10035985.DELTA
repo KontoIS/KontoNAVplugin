@@ -1,0 +1,229 @@
+OBJECT Table 10035985 Konto Service Setup
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Permissions=TableData 1261=rimd;
+    OnDelete=BEGIN
+               DeletePassword("Password Key");
+             END;
+
+    CaptionML=[ENU=Konto Service Setup;
+               ISL=Konto Áj¢nustugrunnur];
+  }
+  FIELDS
+  {
+    { 1   ;   ;Primary Key         ;Code10        ;CaptionML=[ENU=Primary Key;
+                                                              ISL=A–allykill] }
+    { 2   ;   ;User Name           ;Text50        ;CaptionML=[ENU=User Name;
+                                                              ISL=Notandakenni] }
+    { 3   ;   ;Password Key        ;GUID          ;TableRelation="Service Password".Key;
+                                                   CaptionML=[ENU=Password Key;
+                                                              ISL=Lykilkenni a–gangsor–s] }
+    { 5   ;   ;Service URL         ;Text250       ;OnValidate=VAR
+                                                                HttpWebRequestMgt@1000 : Codeunit 1297;
+                                                              BEGIN
+                                                                IF "Service URL" = '' THEN
+                                                                  EXIT;
+                                                                HttpWebRequestMgt.CheckUrl("Service URL");
+                                                                WHILE (STRLEN("Service URL") > 8) AND ("Service URL"[STRLEN("Service URL")] = '/') DO
+                                                                  "Service URL" := COPYSTR("Service URL",1,STRLEN("Service URL") - 1);
+                                                              END;
+
+                                                   CaptionML=[ENU=Service URL;
+                                                              ISL=Vefsl¢– Áj¢nustu] }
+    { 8   ;   ;Account Name        ;Text80        ;CaptionML=[ENU=Account Name;
+                                                              ISL=Nafn reikningseiganda];
+                                                   Editable=No }
+    { 9   ;   ;Account Registration ID;Text50     ;CaptionML=[ENU=Account Registration ID;
+                                                              ISL=Kennitala reikningseiganda];
+                                                   Editable=No }
+    { 10  ;   ;Account VAT Registration No.;Text30;CaptionML=[ENU=Account VAT Registration No.;
+                                                              ISL=VSK n£mer reikningseiganda];
+                                                   Editable=No }
+    { 13  ;   ;Enabled             ;Boolean       ;CaptionML=[ENU=Enabled;
+                                                              ISL=Virkt] }
+    { 14  ;   ;Enable Detailed Logging;Boolean    ;CaptionML=[ENU=Enable Detailed Logging;
+                                                              ISL=Virkja °tarlegan ann†l] }
+    { 22  ;   ;Def. VAT Bus. Pst. Gr. (Price);Code10;
+                                                   TableRelation="VAT Business Posting Group";
+                                                   CaptionML=[DAN=Standard momsvirksomhedsbogf.gruppe (pris);
+                                                              ENU=Def. VAT Bus. Pst. Gr. (Price);
+                                                              ISL=Sj†lfgefinn VSK vi–sk.b¢kunarfl. (ver–)] }
+  }
+  KEYS
+  {
+    {    ;Primary Key                             ;Clustered=Yes }
+  }
+  FIELDGROUPS
+  {
+  }
+  CODE
+  {
+    VAR
+      MustBeEnabledErr@10035985 : TextConst 'ENU=The Konto service is not enabled.\\In the Konto Setup window, select the Enabled check box.;ISL=Konto Áj¢nustan er ekki virk.\\÷ Konto uppsetningars°–unni, setji– hak ° Virkt.';
+      KontoNoOfCustomersMsg@10035986 : TextConst 'ENU=The No. of Customers in Konto is: %1;ISL=Fjîldi vi–skiptamanna ° Konto er: %1';
+      KontoNoOfItemsMsg@10035987 : TextConst 'ENU=The No. of Items in Konto is: %1;ISL=Fjîldi vara ° Konto er: %1';
+      KontoNoOfExpenseMsg@10035988 : TextConst 'ENU=The No. of Expenses in Konto is: %1;ISL=Fjîldi kostna–arreikninga ° Konto er: %1';
+
+    PROCEDURE SavePassword@1(VAR PasswordKey@1001 : GUID;PasswordText@1000 : Text);
+    VAR
+      ServicePassword@1002 : Record 1261;
+    BEGIN
+      IF ISNULLGUID(PasswordKey) OR NOT ServicePassword.GET(PasswordKey) THEN BEGIN
+        ServicePassword.SavePassword(PasswordText);
+        ServicePassword.INSERT(TRUE);
+        PasswordKey := ServicePassword.Key;
+        MODIFY;
+      END ELSE BEGIN
+        ServicePassword.SavePassword(PasswordText);
+        ServicePassword.MODIFY;
+      END;
+      COMMIT;
+    END;
+
+    PROCEDURE GetPassword@2(PasswordKey@1001 : GUID) : Text;
+    VAR
+      ServicePassword@1000 : Record 1261;
+    BEGIN
+      ServicePassword.GET(PasswordKey);
+      EXIT(ServicePassword.GetPassword);
+    END;
+
+    LOCAL PROCEDURE DeletePassword@4(PasswordKey@1000 : GUID);
+    VAR
+      ServicePassword@1001 : Record 1261;
+    BEGIN
+      IF ServicePassword.GET(PasswordKey) THEN
+        ServicePassword.DELETE;
+    END;
+
+    PROCEDURE HasPassword@3(PasswordKey@1001 : GUID) : Boolean;
+    VAR
+      ServicePassword@1000 : Record 1261;
+    BEGIN
+      IF NOT ServicePassword.GET(PasswordKey) THEN
+        EXIT(FALSE);
+      EXIT(ServicePassword.GetPassword <> '');
+    END;
+
+    PROCEDURE SetURLsToDefault@5();
+    VAR
+      KontoServiceMgt@10035985 : Codeunit 10035985;
+    BEGIN
+      KontoServiceMgt.SetURLsToDefault(Rec);
+    END;
+
+    PROCEDURE SetDefaultVATBusPstGrp@10035992();
+    VAR
+      SalesSetup@10035985 : Record 311;
+    BEGIN
+      IF NOT SalesSetup.READPERMISSION THEN EXIT;
+      SalesSetup.GET;
+      "Def. VAT Bus. Pst. Gr. (Price)" := SalesSetup."VAT Bus. Posting Gr. (Price)";
+    END;
+
+    PROCEDURE CheckEnabled@7();
+    BEGIN
+      IF NOT Enabled THEN
+        ERROR(MustBeEnabledErr);
+    END;
+
+    PROCEDURE ShowKontoCustomers@10035985();
+    VAR
+      TempCustomer@10035985 : TEMPORARY Record 10035986;
+      KontoCustomerList@10035987 : Page 10035986;
+      KontoServiceMgt@10035986 : Codeunit 10035985;
+    BEGIN
+      IF KontoServiceMgt.GetCustomers(TempCustomer) THEN BEGIN
+        KontoCustomerList.Set(TempCustomer);
+        KontoCustomerList.RUNMODAL;
+      END ELSE
+        ERROR(GETLASTERRORTEXT);
+    END;
+
+    PROCEDURE ShowKontoNoOfCustomers@10035986();
+    VAR
+      KontoServiceMgt@10035986 : Codeunit 10035985;
+      CustomerCount@10035985 : Integer;
+    BEGIN
+      IF KontoServiceMgt.GetCustomerCount(CustomerCount) THEN
+        MESSAGE(KontoNoOfCustomersMsg,CustomerCount)
+      ELSE
+        ERROR(GETLASTERRORTEXT);
+    END;
+
+    PROCEDURE ShowKontoItems@10035988();
+    VAR
+      TempItem@10035985 : TEMPORARY Record 10035986;
+      KontoItemList@10035987 : Page 10035988;
+      KontoServiceMgt@10035986 : Codeunit 10035985;
+    BEGIN
+      TESTFIELD("Def. VAT Bus. Pst. Gr. (Price)");
+      IF KontoServiceMgt.GetItems(TempItem) THEN BEGIN
+        KontoItemList.Set(TempItem);
+        KontoItemList.RUNMODAL;
+      END ELSE
+        ERROR(GETLASTERRORTEXT);
+    END;
+
+    PROCEDURE ShowKontoNoOfItems@10035987();
+    VAR
+      KontoServiceMgt@10035986 : Codeunit 10035985;
+      ItemCount@10035985 : Integer;
+    BEGIN
+      IF KontoServiceMgt.GetItemCount(ItemCount) THEN
+        MESSAGE(KontoNoOfItemsMsg,ItemCount)
+      ELSE
+        ERROR(GETLASTERRORTEXT);
+    END;
+
+    PROCEDURE ShowKontoInvoices@10035989();
+    VAR
+      TempInvoice@10035985 : TEMPORARY Record 10035986;
+      KontoInvoiceList@10035987 : Page 10035990;
+      KontoServiceMgt@10035986 : Codeunit 10035985;
+      AccountingStatusFilter@10035988 : TextConst 'ENU="&accounting_status=Created"';
+    BEGIN
+      IF KontoServiceMgt.GetInvoices(TempInvoice,AccountingStatusFilter) THEN BEGIN
+        KontoInvoiceList.Set(TempInvoice);
+        KontoInvoiceList.RUNMODAL;
+      END ELSE
+        ERROR(GETLASTERRORTEXT);
+    END;
+
+    PROCEDURE ShowKontoExpenses@10035991();
+    VAR
+      TempExpense@10035985 : TEMPORARY Record 10035986;
+      KontoExpenseList@10035987 : Page 10035993;
+      KontoServiceMgt@10035986 : Codeunit 10035985;
+      AccountingStatusFilter@10035988 : TextConst 'ENU="&accounting_status=Created"';
+    BEGIN
+      IF KontoServiceMgt.GetExpenses(TempExpense,AccountingStatusFilter) THEN BEGIN
+        KontoExpenseList.Set(TempExpense);
+        KontoExpenseList.RUNMODAL;
+      END ELSE
+        ERROR(GETLASTERRORTEXT);
+    END;
+
+    PROCEDURE ShowKontoNoOfExpenses@10035990();
+    VAR
+      KontoServiceMgt@10035986 : Codeunit 10035985;
+      ExpenseCount@10035985 : Integer;
+    BEGIN
+      IF KontoServiceMgt.GetExpenseCount(ExpenseCount) THEN
+        MESSAGE(KontoNoOfExpenseMsg,ExpenseCount)
+      ELSE
+        ERROR(GETLASTERRORTEXT);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

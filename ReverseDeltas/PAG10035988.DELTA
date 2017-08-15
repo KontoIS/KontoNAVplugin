@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Item List"(Page 10035988)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Item List"(Page 10035988);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

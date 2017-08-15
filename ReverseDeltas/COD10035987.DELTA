@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Data Synchronize Mgt."(Codeunit 10035987)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Data Synchronize Mgt."(Codeunit 10035987);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

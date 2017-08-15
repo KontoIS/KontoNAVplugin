@@ -1,0 +1,221 @@
+OBJECT Page 10035993 Konto Expense List
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Expense List;
+               ISL=Konto kostana–arlisti];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10035986;
+    PageType=List;
+    SourceTableTemporary=Yes;
+    OnOpenPage=BEGIN
+                 SETCURRENTKEY("Customer Name");
+               END;
+
+    OnAfterGetRecord=VAR
+                       KontoIntegrationRecord@10035985 : Record 10035986;
+                     BEGIN
+                     END;
+
+    OnAfterGetCurrRecord=BEGIN
+                           IsLinked := Status IN [Status::"Updated in Konto",Status::"Updated in NAV",Status::Synchronized]
+                         END;
+
+    ActionList=ACTIONS
+    {
+      { 10035994;    ;ActionContainer;
+                      ActionContainerType=ActionItems }
+      { 10035998;1   ;Action    ;
+                      Name=CreateNAVExpense;
+                      ShortCutKey=Ctrl+N;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Create Incoming Document;
+                                 ISL=Stofna fylgiskjal † innlei–];
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=NOT IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=NewInvoice;
+                      PromotedCategory=New;
+                      PromotedOnly=Yes;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10035985 : Codeunit 10035987;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.CreateNAVIncomingDocumentFromKonto(Rec);
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10035999;1   ;Action    ;
+                      Name=LinkExistingExpense;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Link Existing Incoming Document;
+                                 ISL=Tengja fyrirliggjandi fylgiskjali † innlei–];
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=NOT IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=CoupledInvoice;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoDataSynchronizeMgt@10035985 : Codeunit 10035987;
+                               BEGIN
+                                 KontoDataSynchronizeMgt.LinkExistingNAVIncomingDocumentFromKonto(Rec);
+                                 UpdatePosted;
+                                 CurrPage.UPDATE(FALSE);
+                               END;
+                                }
+      { 10036002;1   ;Action    ;
+                      Name=SkipExpense;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Skip Expense;
+                                 ISL=Sleppa kostna–i];
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      PromotedIsBig=Yes;
+                      Image=PrepaymentInvoice;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=BEGIN
+                                 TESTFIELD(Posted,FALSE);
+                                 Skipped := TRUE;
+                                 Status := Status::"Updated in NAV";
+                                 MODIFY;
+                               END;
+                                }
+      { 10036000;1   ;Action    ;
+                      Name=BreakExistingLink;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Break Existing Link;
+                                 ISL=Brj¢ta tengingu];
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=RemoveLine;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoIntegrationRecord@10035985 : Record 10035986;
+                               BEGIN
+                                 IF KontoIntegrationRecord.GET(ID) THEN
+                                   KontoIntegrationRecord.DELETE;
+                                 UpdatePosted;
+                               END;
+                                }
+      { 10035995;1   ;Action    ;
+                      Name=IncomingDocument;
+                      CaptionML=[ENU=Incoming Document;
+                                 ISL=Fylgiskjal † innlei–];
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=ProjectExpense;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 PageMgt@10035986 : Codeunit 700;
+                               BEGIN
+                                 PageMgt.PageRun("Related Record ID");
+                                 UpdatePosted;
+                               END;
+                                }
+      { 10036001;1   ;Action    ;
+                      Name=UpdateKontoStatus;
+                      Ellipsis=Yes;
+                      CaptionML=[ENU=Update Konto Status;
+                                 ISL=Uppfëra stî–u ° Konto];
+                      ApplicationArea=#Basic,#Suite;
+                      Promoted=Yes;
+                      Enabled=IsLinked;
+                      PromotedIsBig=Yes;
+                      Image=ChangeStatus;
+                      PromotedCategory=Process;
+                      Scope=Repeater;
+                      OnAction=VAR
+                                 KontoServiceMgt@10035985 : Codeunit 10035985;
+                               BEGIN
+                                 IF KontoServiceMgt.UpdateExpense(Rec) THEN
+                                   DELETE;
+                               END;
+                                }
+    }
+  }
+  CONTROLS
+  {
+    { 10035985;0;Container;
+                ContainerType=ContentArea }
+
+    { 10035986;1;Group    ;
+                Name=Group;
+                GroupType=Repeater }
+
+    { 10035996;2;Field    ;
+                SourceExpr=Status }
+
+    { 10035997;2;Field    ;
+                SourceExpr=Posted }
+
+    { 10035987;2;Field    ;
+                SourceExpr="Expense Description" }
+
+    { 10035988;2;Field    ;
+                SourceExpr="Expense Vendor Reg. No." }
+
+    { 10035989;2;Field    ;
+                SourceExpr="Expense VAT Registration No." }
+
+    { 10035990;2;Field    ;
+                SourceExpr="Expense Amount" }
+
+    { 10035991;2;Field    ;
+                CaptionML=[ENU=Expense Attachment;
+                           ISL=Vi–hengi kostna–ar];
+                SourceExpr="Expense Attachment".HASVALUE }
+
+    { 10035992;2;Field    ;
+                CaptionML=[ENU=Expense Xml;
+                           ISL=Xml kostana–ar];
+                SourceExpr="Expense Xml".HASVALUE;
+                Visible=FALSE }
+
+    { 10035993;2;Field    ;
+                SourceExpr="Record Updated" }
+
+  }
+  CODE
+  {
+    VAR
+      IsLinked@10035985 : Boolean;
+
+    PROCEDURE Set@1(VAR TempCustomer@10035985 : TEMPORARY Record 10035986);
+    BEGIN
+      COPY(TempCustomer,TRUE);
+    END;
+
+    LOCAL PROCEDURE UpdatePosted@10035986();
+    VAR
+      KontoIntegrationRecord@10035985 : Record 10035986;
+      KontoDataSynchronizeMgt@10035986 : Codeunit 10035987;
+    BEGIN
+      KontoDataSynchronizeMgt.UpdateExpensePosted(Rec);
+      IsLinked := Status IN [Status::"Updated in Konto",Status::"Updated in NAV",Status::Synchronized]
+    END;
+
+    BEGIN
+    END.
+  }
+}
+

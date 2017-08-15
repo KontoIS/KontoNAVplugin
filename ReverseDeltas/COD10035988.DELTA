@@ -1,0 +1,21 @@
+OBJECT Modification "Konto Sales Invoice Mgt."(Codeunit 10035988)
+{
+  OBJECT-PROPERTIES
+  {
+    Date=;
+    Time=;
+    Version List=;
+  }
+  PROPERTIES
+  {
+    Target="Konto Sales Invoice Mgt."(Codeunit 10035988);
+    ChangeType=Deletion;
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+

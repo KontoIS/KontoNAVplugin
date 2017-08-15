@@ -1,0 +1,73 @@
+OBJECT Page 10035989 Konto Item Details
+{
+  OBJECT-PROPERTIES
+  {
+    Date=06.05.17;
+    Time=22:00:00;
+    Version List=KONTO10.00;
+  }
+  PROPERTIES
+  {
+    Editable=No;
+    CaptionML=[ENU=Konto Item Details;
+               ISL=Konto v”ruupplìsingar];
+    InsertAllowed=No;
+    DeleteAllowed=No;
+    ModifyAllowed=No;
+    LinksAllowed=No;
+    SourceTable=Table10035986;
+    DataCaptionExpr="Item Description";
+    PageType=Card;
+    SourceTableTemporary=Yes;
+    ShowFilter=No;
+  }
+  CONTROLS
+  {
+    { 10035985;0;Container;
+                ContainerType=ContentArea }
+
+    { 10035986;1;Group    ;
+                Name=General;
+                GroupType=Group }
+
+    { 10035992;2;Field    ;
+                SourceExpr=Status }
+
+    { 10035987;2;Field    ;
+                SourceExpr="Item Number" }
+
+    { 10035988;2;Field    ;
+                SourceExpr="Item Description" }
+
+    { 10035989;2;Field    ;
+                SourceExpr="Item Unit of Measure" }
+
+    { 10035990;2;Field    ;
+                SourceExpr="Item Tax Category" }
+
+    { 10035991;2;Field    ;
+                SourceExpr="Item Unit Price" }
+
+    { 10035993;2;Field    ;
+                SourceExpr="Item Category" }
+
+    { 10035994;2;Field    ;
+                SourceExpr="Item Active" }
+
+    { 10036002;2;Field    ;
+                SourceExpr="Record Updated" }
+
+  }
+  CODE
+  {
+
+    PROCEDURE Set@10035985(VAR TempItem@10035985 : Record 10035986);
+    BEGIN
+      COPY(TempItem,TRUE);
+    END;
+
+    BEGIN
+    END.
+  }
+}
+
